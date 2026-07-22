@@ -1,0 +1,425 @@
+{
+  "groups": [
+    {
+      "name": "operator",
+      "type": "com.jio.rcs.operator.config.ProviderProperties",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties"
+    },
+    {
+      "name": "operator.bulk",
+      "type": "com.jio.rcs.operator.config.ProviderProperties$Bulk",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties"
+    },
+    {
+      "name": "operator.callback",
+      "type": "com.jio.rcs.operator.config.ProviderProperties$Callback",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties"
+    },
+    {
+      "name": "operator.callback.retry",
+      "type": "com.jio.rcs.operator.config.ProviderProperties$Retry",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Callback"
+    },
+    {
+      "name": "operator.capability",
+      "type": "com.jio.rcs.operator.config.ProviderProperties$Capability",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties"
+    },
+    {
+      "name": "operator.dlr",
+      "type": "com.jio.rcs.operator.config.ProviderProperties$Dlr",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties"
+    },
+    {
+      "name": "operator.error-simulation",
+      "type": "com.jio.rcs.operator.config.ProviderProperties$ErrorSimulation",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties"
+    },
+    {
+      "name": "operator.identity",
+      "type": "com.jio.rcs.operator.config.ProviderProperties$Identity",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties"
+    },
+    {
+      "name": "operator.latency",
+      "type": "com.jio.rcs.operator.config.ProviderProperties$Latency",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties"
+    },
+    {
+      "name": "operator.media",
+      "type": "com.jio.rcs.operator.config.ProviderProperties$Media",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties"
+    },
+    {
+      "name": "operator.message-store",
+      "type": "com.jio.rcs.operator.config.ProviderProperties$MessageStore",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties"
+    },
+    {
+      "name": "operator.metrics",
+      "type": "com.jio.rcs.operator.config.ProviderProperties$Metrics",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties"
+    },
+    {
+      "name": "operator.performance-mode",
+      "type": "com.jio.rcs.operator.config.ProviderProperties$PerformanceMode",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties"
+    },
+    {
+      "name": "operator.probability",
+      "type": "com.jio.rcs.operator.config.ProviderProperties$Probability",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties"
+    },
+    {
+      "name": "operator.queue",
+      "type": "com.jio.rcs.operator.config.ProviderProperties$Queue",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties"
+    },
+    {
+      "name": "operator.scheduler",
+      "type": "com.jio.rcs.operator.config.ProviderProperties$Scheduler",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties"
+    },
+    {
+      "name": "operator.state-machine",
+      "type": "com.jio.rcs.operator.config.ProviderProperties$StateMachine",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties"
+    },
+    {
+      "name": "operator.tps",
+      "type": "com.jio.rcs.operator.config.ProviderProperties$Tps",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "operator.bulk.max-messages-per-batch",
+      "type": "java.lang.Integer",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Bulk",
+      "defaultValue": 1000
+    },
+    {
+      "name": "operator.callback-url",
+      "type": "java.lang.String",
+      "description": "Where every DLR\/dispatch webhook is sent by default. A request can still override this per-message via {@code SendMessageRequest.callbackUrl} - this is just what's used when a request doesn't set one.",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties",
+      "defaultValue": "http:\/\/localhost:9000\/webhook"
+    },
+    {
+      "name": "operator.callback.connect-timeout-millis",
+      "type": "java.lang.Long",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Callback",
+      "defaultValue": 3000
+    },
+    {
+      "name": "operator.callback.max-connections-per-route",
+      "type": "java.lang.Integer",
+      "description": "Max pooled connections per callback destination (route).",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Callback",
+      "defaultValue": 100
+    },
+    {
+      "name": "operator.callback.max-total-connections",
+      "type": "java.lang.Integer",
+      "description": "Max total pooled HTTP connections across all webhook destinations. The JDK default client this replaced had no configurable pool at all (effectively ~5 concurrent connections per destination via http.maxConnections), which became the real ceiling on callback throughput once queue backpressure (see InMemoryQueueService) was fixed - a full queue and a connection-starved HTTP client produce the exact same symptom (DLR callbacks falling behind), so both had to be fixed together for genuine zero-loss at high volume.",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Callback",
+      "defaultValue": 200
+    },
+    {
+      "name": "operator.callback.read-timeout-millis",
+      "type": "java.lang.Long",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Callback",
+      "defaultValue": 5000
+    },
+    {
+      "name": "operator.callback.retry.backoff-max-millis",
+      "type": "java.lang.Long",
+      "description": "Upper bound on any single retry's computed backoff, so a message that has already failed a few times doesn't end up waiting minutes between attempts under maxAttempts increases - keeps retry timing predictable at scale.",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Retry",
+      "defaultValue": 15000
+    },
+    {
+      "name": "operator.callback.retry.backoff-millis",
+      "type": "java.lang.Long",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Retry",
+      "defaultValue": 2000
+    },
+    {
+      "name": "operator.callback.retry.backoff-multiplier",
+      "type": "java.lang.Double",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Retry",
+      "defaultValue": 2
+    },
+    {
+      "name": "operator.callback.retry.max-attempts",
+      "type": "java.lang.Integer",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Retry",
+      "defaultValue": 5
+    },
+    {
+      "name": "operator.capability.capable-percentage",
+      "type": "java.lang.Integer",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Capability",
+      "defaultValue": 90
+    },
+    {
+      "name": "operator.dlr.delays-seconds",
+      "type": "java.util.Map<java.lang.String,java.lang.Long>",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Dlr"
+    },
+    {
+      "name": "operator.error-simulation.codes",
+      "type": "java.util.List<com.jio.rcs.operator.config.ProviderProperties$ErrorCode>",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$ErrorSimulation"
+    },
+    {
+      "name": "operator.error-simulation.enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$ErrorSimulation",
+      "defaultValue": true
+    },
+    {
+      "name": "operator.identity.bot-id",
+      "type": "java.lang.String",
+      "description": "Simulated bot\/agent registration id echoed into every DLR webhook's {@code delivery_info.delivery_status.webhook_data.botId} \/ {@code additional_data.webhook_data.botId} - purely cosmetic, for parity with a real captured provider payload shape. Configurable, no other component reads this value.",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Identity",
+      "defaultValue": "SIMULATOR-BOT-000000000001"
+    },
+    {
+      "name": "operator.identity.provider-code",
+      "type": "java.lang.String",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Identity",
+      "defaultValue": "SIM"
+    },
+    {
+      "name": "operator.identity.provider-display-name",
+      "type": "java.lang.String",
+      "description": "Human-readable name used in the DLR webhook's {@code agent.provider} field.",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Identity",
+      "defaultValue": "RCS Provider Simulator"
+    },
+    {
+      "name": "operator.identity.provider-name",
+      "type": "java.lang.String",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Identity",
+      "defaultValue": "RCS_SIMULATOR"
+    },
+    {
+      "name": "operator.latency.max-millis",
+      "type": "java.lang.Long",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Latency",
+      "defaultValue": 200
+    },
+    {
+      "name": "operator.latency.min-millis",
+      "type": "java.lang.Long",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Latency",
+      "defaultValue": 100
+    },
+    {
+      "name": "operator.media.allowed-content-types",
+      "type": "java.util.List<java.lang.String>",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Media"
+    },
+    {
+      "name": "operator.media.cleanup-interval-millis",
+      "type": "java.lang.Long",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Media",
+      "defaultValue": 60000
+    },
+    {
+      "name": "operator.media.max-file-size-bytes",
+      "type": "java.lang.Long",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Media",
+      "defaultValue": 0
+    },
+    {
+      "name": "operator.media.retention-minutes",
+      "type": "java.lang.Long",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Media",
+      "defaultValue": 60
+    },
+    {
+      "name": "operator.message-store.cleanup-interval-millis",
+      "type": "java.lang.Long",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$MessageStore",
+      "defaultValue": 60000
+    },
+    {
+      "name": "operator.message-store.retention-minutes",
+      "type": "java.lang.Long",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$MessageStore",
+      "defaultValue": 60
+    },
+    {
+      "name": "operator.metrics.enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Metrics",
+      "defaultValue": true
+    },
+    {
+      "name": "operator.performance-mode.dlr-delay-seconds-override",
+      "type": "java.lang.Long",
+      "description": "Per-state DLR delay (seconds) used instead of operator.dlr.delays-seconds.* while enabled - 0 by default (every transition fires as fast as the scheduler tick allows).",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$PerformanceMode",
+      "defaultValue": 0
+    },
+    {
+      "name": "operator.performance-mode.enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$PerformanceMode",
+      "defaultValue": false
+    },
+    {
+      "name": "operator.performance-mode.latency-max-millis",
+      "type": "java.lang.Long",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$PerformanceMode",
+      "defaultValue": 0
+    },
+    {
+      "name": "operator.performance-mode.latency-min-millis",
+      "type": "java.lang.Long",
+      "description": "Simulated ingestion latency floor\/ceiling used instead of operator.latency.* while enabled - both 0 by default (no artificial delay at all).",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$PerformanceMode",
+      "defaultValue": 0
+    },
+    {
+      "name": "operator.probability.delivered-percentage",
+      "type": "java.lang.Integer",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Probability",
+      "defaultValue": 100
+    },
+    {
+      "name": "operator.probability.displayed-percentage",
+      "type": "java.lang.Integer",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Probability",
+      "defaultValue": 100
+    },
+    {
+      "name": "operator.probability.failed-percentage",
+      "type": "java.lang.Integer",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Probability",
+      "defaultValue": 0
+    },
+    {
+      "name": "operator.queue.callback-queue-size",
+      "type": "java.lang.Integer",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Queue",
+      "defaultValue": 50000
+    },
+    {
+      "name": "operator.queue.callback-workers",
+      "type": "java.lang.Integer",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Queue"
+    },
+    {
+      "name": "operator.queue.capacity",
+      "type": "java.lang.Integer",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Queue",
+      "defaultValue": 100000
+    },
+    {
+      "name": "operator.queue.dlr-queue-size",
+      "type": "java.lang.Integer",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Queue",
+      "defaultValue": 50000
+    },
+    {
+      "name": "operator.queue.dlr-workers",
+      "type": "java.lang.Integer",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Queue"
+    },
+    {
+      "name": "operator.queue.incoming-queue-size",
+      "type": "java.lang.Integer",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Queue",
+      "defaultValue": 50000
+    },
+    {
+      "name": "operator.queue.incoming-workers",
+      "type": "java.lang.Integer",
+      "description": "Per-stage dispatcher-loop counts (operator.queue.incoming-workers, validation-workers, processing-workers, dlr-workers, callback-workers). Each is nullable\/unset by default, meaning \"fall back to {@link #dispatcherWorkersPerQueue()}\" - set any subset of these to tune one stage's concurrency independently of the others (e.g. give CALLBACK far more concurrent dispatch loops than DLR if your webhook receiver is slow, without touching anything else). Since InMemoryQueueService now runs each queue's dispatch loops on their own dedicated virtual-thread executor (see its class Javadoc), raising one stage's worker count no longer takes threads away from any other stage - unlike the old shared fixed-size platform-thread pool, where every stage drew from the same limited bucket.",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Queue"
+    },
+    {
+      "name": "operator.queue.processing-queue-size",
+      "type": "java.lang.Integer",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Queue",
+      "defaultValue": 50000
+    },
+    {
+      "name": "operator.queue.processing-workers",
+      "type": "java.lang.Integer",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Queue"
+    },
+    {
+      "name": "operator.queue.scheduler-pool-size",
+      "type": "java.lang.Integer",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Queue",
+      "defaultValue": 16
+    },
+    {
+      "name": "operator.queue.validation-queue-size",
+      "type": "java.lang.Integer",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Queue",
+      "defaultValue": 50000
+    },
+    {
+      "name": "operator.queue.validation-workers",
+      "type": "java.lang.Integer",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Queue"
+    },
+    {
+      "name": "operator.queue.worker-threads",
+      "type": "java.lang.Integer",
+      "description": "Legacy\/fallback dispatcher-thread count, still used to derive a default via {@link #dispatcherWorkersPerQueue()} for any pipeline stage that doesn't set its own {@code operator.queue.*-workers} override below. Kept unrenamed for backward compatibility - existing deployments that only set this one property keep working identically.",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Queue",
+      "defaultValue": 32
+    },
+    {
+      "name": "operator.scheduler.tick-duration-millis",
+      "type": "java.lang.Long",
+      "description": "Wheel tick width in milliseconds - bounds scheduling resolution (a task may fire up to one tick late).",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Scheduler",
+      "defaultValue": 100
+    },
+    {
+      "name": "operator.scheduler.wheel-size",
+      "type": "java.lang.Integer",
+      "description": "Number of buckets in the wheel; one full revolution spans wheelSize * tickDurationMillis (default ~51.2s).",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Scheduler",
+      "defaultValue": 512
+    },
+    {
+      "name": "operator.scheduler.worker-count",
+      "type": "java.lang.Integer",
+      "description": "Cap on how many due tasks may run concurrently at once (see TimingWheelScheduler - virtual threads have no fixed pool size to bound instead).",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Scheduler",
+      "defaultValue": 16
+    },
+    {
+      "name": "operator.state-machine.transitions",
+      "type": "java.util.Map<java.lang.String,java.util.List<java.lang.String>>",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$StateMachine"
+    },
+    {
+      "name": "operator.tps.enabled",
+      "type": "java.lang.Boolean",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Tps",
+      "defaultValue": true
+    },
+    {
+      "name": "operator.tps.limit",
+      "type": "java.lang.Integer",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Tps",
+      "defaultValue": 1000
+    },
+    {
+      "name": "operator.tps.window-millis",
+      "type": "java.lang.Long",
+      "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Tps",
+      "defaultValue": 1000
+    }
+  ],
+  "hints": []
+}

@@ -1,0 +1,199 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: jio-rcs-operator
+  threads:
+    virtual:
+      enabled: false
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB   # keep in sync with operator.media.max-file-size-bytes below
+      max-request-size: 10MB
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+
+logging:
+  level:
+    root: INFO
+    com.jio.rcs.operator: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# --------------------------------------------------------------------------
+# Jio RCS Operator Simulator configuration - everything below is
+# provider-simulation behaviour and is fully configurable per environment.
+#
+# This service stores NOTHING persistently - there is no database. Clients
+# are configured statically below; in-flight messages live only in an
+# in-memory map for the duration of their lifecycle (see
+# operator.message-store) purely so async DLR/callback stages can find the
+# message they belong to and so GET /v1/messages/{id} can answer status
+# queries. A restart clears all in-flight state, exactly like a stateless
+# provider edge service.
+# --------------------------------------------------------------------------
+operator:
+  provider-name: JIO_RCS
+  provider-code: JIO
+
+  auth:
+    token-expiry-seconds: 3600
+    issuer: jio-rcs-operator
+    secret: "ChangeThisDevOnlySecretKeyForJioRcsOperatorSimulator1234567890"
+
+  # Statically configured CPaaS clients (replaces a clients database table).
+  # clientSecretHash values are BCrypt hashes of the plaintext secrets noted
+  # in comments - verified with Python's bcrypt library at authoring time.
+  clients:
+    - client-id: cpaas-demo-client
+      client-secret-hash: "$2b$10$3.Jk9oFc1W1.GsXFSOpqcO2tP1G8d4AADVtb3tABQyl2hCi/6DsOa" # secret123
+      agent-id: agent-demo-001
+      callback-url: "https://webhook.site/4cc6ff97-405d-42cb-9970-7d8fb7e5e72c"
+      blocked: false
+    - client-id: cpaas-blocked-client
+      client-secret-hash: "$2b$10$g060dmYtq3FJdbxvFvS3cefCAFLBrAGxF/UedKGvJ1Y7QY0gs.Q6u" # blocked123
+      agent-id: agent-blocked-002
+      callback-url: "https://cpaas.example.com/webhooks/jio-rcs"
+      blocked: true
+
+  # How long a message's in-memory correlation record is kept after it
+  # reaches a terminal state, purely to answer late status queries. This is
+  # not persistence - it is bounded, in-process memory that is discarded on
+  # restart and periodically swept by MessageStoreCleanupScheduler.
+  message-store:
+    retention-minutes: 60
+    cleanup-interval-millis: 60000
+
+  tps:
+    enabled: true
+    limit: 5000         # global provider throughput ceiling
+    window-millis: 1000
+
+  queue:
+    capacity: 10000
+    worker-threads: 50
+    incoming-queue-size: 5000
+    validation-queue-size: 5000
+    processing-queue-size: 5000
+    dlr-queue-size: 5000
+    callback-queue-size: 5000
+
+  latency:
+    min-millis: 50
+    max-millis: 300
+
+  dlr:
+    # configurable delay (in seconds) before each state is reached,
+    # measured from message acceptance time
+    delays-seconds:
+      ACCEPTED: 0
+      QUEUED: 1
+      SUBMITTED: 2
+      DELIVERED: 5
+      DISPLAYED: 8
+      FAILED: 3
+      REJECTED: 0
+      EXPIRED: 30
+      UNKNOWN: 10
+
+  state-machine:
+    # allowed transitions per current state (comma separated targets)
+    transitions:
+      ACCEPTED: [QUEUED, REJECTED]
+      QUEUED: [SUBMITTED, FAILED, EXPIRED]
+      SUBMITTED: [DELIVERED, FAILED, UNKNOWN, EXPIRED]
+      DELIVERED: [DISPLAYED, UNKNOWN]
+      DISPLAYED: []
+      FAILED: []
+      REJECTED: []
+      EXPIRED: []
+      UNKNOWN: []
+
+  probability:
+    # chance (0-100) message reaches DELIVERED after SUBMITTED
+    delivered-percentage: 95
+    # chance (0-100) a DELIVERED message progresses to DISPLAYED
+    displayed-percentage: 80
+    # chance (0-100) message fails outright during processing
+    failed-percentage: 5
+
+  error-simulation:
+    enabled: true
+    codes:
+      - code: INVALID_PHONE
+        description: "The destination phone number is not a valid MSISDN"
+        weight: 15
+      - code: NOT_RCS_USER
+        description: "Destination subscriber is not RCS provisioned"
+        weight: 20
+      - code: DEVICE_OFFLINE
+        description: "Destination device is currently offline"
+        weight: 20
+      - code: NETWORK_FAILURE
+        description: "Transient network failure at the operator"
+        weight: 15
+      - code: AGENT_BLOCKED
+        description: "The RCS agent has been blocked by the operator"
+        weight: 10
+      - code: INVALID_AGENT
+        description: "The agent id is not recognized"
+        weight: 5
+      - code: RATE_LIMIT
+        description: "Agent exceeded contracted rate limit"
+        weight: 5
+      - code: SERVICE_UNAVAILABLE
+        description: "Operator service temporarily unavailable"
+        weight: 5
+      - code: UNKNOWN
+        description: "Unknown provider error"
+        weight: 5
+
+  callback:
+    connect-timeout-millis: 3000
+    read-timeout-millis: 5000
+    retry:
+      max-attempts: 3
+      backoff-millis: 2000
+      backoff-multiplier: 2.0
+
+  bulk:
+    max-messages-per-batch: 1000
+
+  # POST /v1/media + GET /media/{id}. Content-type allowlist and
+  # single-file-per-request rule are our own design choice; nothing here is
+  # ever written to disk - uploaded bytes live only in memory until
+  # retention-minutes elapses.
+  media:
+    allowed-content-types:
+      - image/jpeg
+      - image/jpg
+      - image/gif
+      - image/png
+      - video/mp4
+      - video/mpeg
+      - video/mpeg4
+      - video/webm
+      - application/pdf
+    max-file-size-bytes: 10485760   # 10MB - simulator default, keep in sync with spring.servlet.multipart above
+    retention-minutes: 60
+    cleanup-interval-millis: 60000
+
+  # POST /v1/capability/check - a deterministic mock. capable-percentage is
+  # the chance (0-100) a given phone number is treated as RCS-capable; the
+  # result is deterministic per number for the life of the process (see
+  # CapabilityService).
+  capability:
+    capable-percentage: 90
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
