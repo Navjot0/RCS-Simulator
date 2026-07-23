@@ -12,7 +12,6 @@ com\jio\rcs\operator\exception\InvalidAgentException.class
 com\jio\rcs\operator\audit\AuditLogEntry.class
 com\jio\rcs\operator\dto\response\BulkMessageResponse.class
 com\jio\rcs\operator\scheduler\DlrScheduler.class
-com\jio\rcs\operator\JioRcsOperatorApplication.class
 com\jio\rcs\operator\dto\response\UploadFileResponse.class
 com\jio\rcs\operator\callback\DeliveryStatus.class
 com\jio\rcs\operator\callback\CallbackContentMapper.class
@@ -49,6 +48,7 @@ com\jio\rcs\operator\processor\IncomingQueueConsumer.class
 com\jio\rcs\operator\config\ProviderProperties$Callback.class
 com\jio\rcs\operator\processor\MessageProcessor.class
 com\jio\rcs\operator\processor\ProcessingQueueConsumer.class
+com\jio\rcs\operator\RcsSimulatorApplication.class
 com\jio\rcs\operator\controller\MediaController.class
 com\jio\rcs\operator\dto\response\StatusHistoryEntryResponse$StatusHistoryEntryResponseBuilder.class
 com\jio\rcs\operator\processor\ValidationQueueConsumer.class
