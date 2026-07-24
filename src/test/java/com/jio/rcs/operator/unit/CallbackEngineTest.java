@@ -8,15 +8,18 @@ import com.jio.rcs.operator.callback.CallbackContentMapper;
 import com.jio.rcs.operator.callback.CallbackDeliveryResult;
 import com.jio.rcs.operator.callback.CallbackEngine;
 import com.jio.rcs.operator.config.ProviderProperties;
+import com.jio.rcs.operator.config.WireProviderProperties;
 import com.jio.rcs.operator.metrics.RuntimeMetricsRecorder;
 import com.jio.rcs.operator.model.MessageContext;
 import com.jio.rcs.operator.scheduler.DlrScheduler;
 import com.jio.rcs.operator.statemachine.MessageState;
+import com.jio.rcs.operator.wire.dlr.DlrFormatterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.TimeZone;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -72,7 +75,8 @@ class CallbackEngineTest {
         objectMapper.setTimeZone(TimeZone.getTimeZone("Asia/Kolkata"));
         objectMapper.enable(SerializationFeature.WRITE_DATES_WITH_CONTEXT_TIME_ZONE);
         callbackEngine = new CallbackEngine(callbackClient, objectMapper, properties, dlrScheduler,
-                new CallbackContentMapper(), new RuntimeMetricsRecorder(properties));
+                new CallbackContentMapper(), new RuntimeMetricsRecorder(properties),
+                new DlrFormatterRegistry(List.of()), new WireProviderProperties());
     }
 
     private MessageContext sampleMessage(MessageState state) {
@@ -151,7 +155,11 @@ class CallbackEngineTest {
         String json = jsonCaptor.getValue();
 
         assertThat(json).isNotEqualTo("{}");
-        assertThat(json).contains("\"event_type\":\"message_delivery\"");
+        // Wire value is "delivery_report", not the more obvious "message_delivery" -
+        // see DlrWebhookMapping.EventType.MESSAGE_DELIVERY's Javadoc for why:
+        // the CPaaS's own JioRcsWebhookProcessor::mapNewFormatEventType() lookup
+        // table never recognizes "message_delivery" as an event_type at all.
+        assertThat(json).contains("\"event_type\":\"delivery_report\"");
         assertThat(json).contains("\"external_message_id\":\"SIMTEST0002\"");
         assertThat(json).contains("\"message_id\":\"11111111-2222-3333-4444-555555555555\"");
         assertThat(json).contains("\"status\":\"delivered\"");

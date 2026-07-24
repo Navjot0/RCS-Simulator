@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -59,6 +60,28 @@ public class MessageContext {
      * carousel/media/suggestions/messageContent).
      */
     private JsonNode content;
+
+    /**
+     * Which real provider's wire format this message was ingested through -
+     * "jio", "dotgo", "vi", "airtel", etc. (see com.jio.rcs.operator.wire) -
+     * or {@code null}/blank for the self-designed {@code POST /v1/messages}
+     * contract. CallbackEngine uses this to pick a
+     * {@link com.jio.rcs.operator.wire.dlr.DlrFormatter} that produces a DLR
+     * payload byte-for-byte compatible with that provider's real webhook
+     * consumer, instead of this simulator's own {@link com.jio.rcs.operator.callback.CallbackEnvelope} shape.
+     */
+    private String providerProfile;
+
+    /**
+     * Provider-specific identifiers captured at wire ingestion time that a
+     * later DLR needs to be faithful (e.g. Jio/VI/Dotgo's {@code botId} /
+     * {@code senderId} / {@code business_id}) - keyed by a short logical
+     * name ("botId" today) rather than per-provider fields, since every
+     * wire profile implemented so far only needs the one value. {@code null}
+     * for messages ingested via the self-designed {@code /v1/messages}
+     * contract.
+     */
+    private Map<String, String> wireAttributes;
 
     private volatile String status;
     private volatile String errorCode;

@@ -52,6 +52,20 @@ public class RestClientConfig {
                 .setMaxConnTotal(callback.getMaxTotalConnections())
                 .setMaxConnPerRoute(callback.getMaxConnectionsPerRoute())
                 .setDefaultConnectionConfig(connectionConfig)
+                // Validate every pooled connection before reuse instead of trusting
+                // it's still alive. Needed against receivers like `php artisan serve`
+                // (PHP's built-in dev server) - it does not support HTTP keep-alive
+                // reliably and can silently close a connection after responding,
+                // without the client noticing at checkout time. Reusing that dead
+                // connection for the next callback/retry then writes successfully
+                // into a socket nobody is reading anymore, and the client just waits
+                // for a response until operator.callback.read-timeout-millis expires
+                // - manifesting as a spurious "Read timed out" purely on retries,
+                // even though a brand-new connection (e.g. curl/Postman) succeeds
+                // every time. Set to 0 so this check runs on every lease, not just
+                // after some idle threshold - the cost is one cheap non-blocking
+                // socket check, negligible next to network round-trip time.
+                .setValidateAfterInactivity(TimeValue.ofMilliseconds(0))
                 .build();
 
         RequestConfig requestConfig = RequestConfig.custom()

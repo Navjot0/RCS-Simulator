@@ -89,6 +89,11 @@
       "name": "operator.tps",
       "type": "com.jio.rcs.operator.config.ProviderProperties$Tps",
       "sourceType": "com.jio.rcs.operator.config.ProviderProperties"
+    },
+    {
+      "name": "operator.wire",
+      "type": "com.jio.rcs.operator.config.WireProviderProperties",
+      "sourceType": "com.jio.rcs.operator.config.WireProviderProperties"
     }
   ],
   "properties": [
@@ -419,6 +424,11 @@
       "type": "java.lang.Long",
       "sourceType": "com.jio.rcs.operator.config.ProviderProperties$Tps",
       "defaultValue": 1000
+    },
+    {
+      "name": "operator.wire.profiles",
+      "type": "java.util.Map<java.lang.String,com.jio.rcs.operator.config.WireProviderProperties$Profile>",
+      "sourceType": "com.jio.rcs.operator.config.WireProviderProperties"
     }
   ],
   "hints": []

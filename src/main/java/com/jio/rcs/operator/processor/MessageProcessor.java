@@ -15,6 +15,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+
 /**
  * The "Message Engine" stage of the pipeline (Controller -&gt; Validation -&gt;
  * Message Engine -&gt; DLR Engine -&gt; Callback Engine). Places the message, as
@@ -40,7 +42,28 @@ public class MessageProcessor {
     private final RuntimeMetricsRecorder metricsRecorder;
 
     public MessageContext ingest(SendMessageRequest request, String batchId) {
-        String providerMessageId = IdGenerator.providerMessageId(providerProperties.getIdentity().getProviderCode());
+        return doIngest(request, batchId, null, null, null);
+    }
+
+    /**
+     * Ingestion entry point for a message received through one of the real
+     * provider wire-format controllers (see com.jio.rcs.operator.wire),
+     * rather than this simulator's own {@code POST /v1/messages} contract.
+     *
+     * @param providerProfile           which real provider's format this came through - "jio", "dotgo", "vi", "airtel", etc. - tags MessageContext so CallbackEngine picks the matching DlrFormatter.
+     * @param overrideProviderMessageId when non-blank, used as-is instead of generating a new provider-style id. Some providers (Jio) supply their own message id at send time via a query param that must be echoed back verbatim in later DLRs for the CPaaS caller to correlate them; others (Dotgo/VI/Airtel) expect the provider (us) to mint one and return it in the synchronous response instead.
+     * @param wireAttributes            provider-specific identifiers (e.g. botId/senderId) a DlrFormatter needs later to build a faithful DLR - see MessageContext.wireAttributes.
+     */
+    public MessageContext ingestWire(SendMessageRequest request, String providerProfile,
+                                      String overrideProviderMessageId, Map<String, String> wireAttributes) {
+        return doIngest(request, null, providerProfile, overrideProviderMessageId, wireAttributes);
+    }
+
+    private MessageContext doIngest(SendMessageRequest request, String batchId, String providerProfile,
+                                     String overrideProviderMessageId, Map<String, String> wireAttributes) {
+        String providerMessageId = (overrideProviderMessageId != null && !overrideProviderMessageId.isBlank())
+                ? overrideProviderMessageId
+                : IdGenerator.providerMessageId(providerProperties.getIdentity().getProviderCode());
         String callbackUrl = request.getCallbackUrl();
 
         MessageContext message = messageMapper.toContext(request, providerMessageId,
@@ -48,6 +71,8 @@ public class MessageProcessor {
         message.setBatchId(batchId);
         message.setProviderName(providerProperties.getIdentity().getProviderName());
         message.setInternalMessageId(IdGenerator.internalMessageId());
+        message.setProviderProfile(providerProfile);
+        message.setWireAttributes(wireAttributes);
         messageStore.put(message);
 
         queueService.publish(QueueNames.INCOMING, QueueMessage.builder()
@@ -55,9 +80,10 @@ public class MessageProcessor {
                 .payload(new IncomingTask(providerMessageId))
                 .build());
 
-        // Single canonical acceptance point (single-send and bulk both flow through
-        // here), so this is the one place message-ingestion TPS is measured -
-        // see RuntimeMetricsRecorder / GET /metrics' runtime.currentTps etc.
+        // Single canonical acceptance point (single-send, bulk, and every wire
+        // profile all flow through here), so this is the one place
+        // message-ingestion TPS is measured - see RuntimeMetricsRecorder /
+        // GET /metrics' runtime.currentTps etc.
         metricsRecorder.recordMessageIngested();
 
         // DEBUG, not INFO: this fires once per accepted message, so at the
@@ -65,7 +91,7 @@ public class MessageProcessor {
         // single biggest source of log volume. Default logging.level.com.jio.rcs.operator=INFO
         // keeps it silent; set it to DEBUG (application.properties) to see
         // per-message tracing again.
-        log.debug("Accepted message {} for agentId={}", providerMessageId, request.getAgentId());
+        log.debug("Accepted message {} for agentId={} providerProfile={}", providerMessageId, request.getAgentId(), providerProfile);
         return message;
     }
 }

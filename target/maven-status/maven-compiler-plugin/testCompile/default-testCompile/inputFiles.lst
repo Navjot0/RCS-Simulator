@@ -1,4 +1,5 @@
 C:\Users\Navjot Singh\project\RCS Simulator\src\test\java\com\jio\rcs\operator\integration\MessageFlowIntegrationTest.java
+C:\Users\Navjot Singh\project\RCS Simulator\src\test\java\com\jio\rcs\operator\integration\WireFormatIntegrationTest.java
 C:\Users\Navjot Singh\project\RCS Simulator\src\test\java\com\jio\rcs\operator\unit\CallbackContentMapperTest.java
 C:\Users\Navjot Singh\project\RCS Simulator\src\test\java\com\jio\rcs\operator\unit\CallbackEngineTest.java
 C:\Users\Navjot Singh\project\RCS Simulator\src\test\java\com\jio\rcs\operator\unit\DefaultDlrOutcomeStrategyTest.java
@@ -11,3 +12,7 @@ C:\Users\Navjot Singh\project\RCS Simulator\src\test\java\com\jio\rcs\operator\u
 C:\Users\Navjot Singh\project\RCS Simulator\src\test\java\com\jio\rcs\operator\unit\StateMachineServiceTest.java
 C:\Users\Navjot Singh\project\RCS Simulator\src\test\java\com\jio\rcs\operator\unit\TimingWheelSchedulerTest.java
 C:\Users\Navjot Singh\project\RCS Simulator\src\test\java\com\jio\rcs\operator\unit\TpsLimiterServiceTest.java
+C:\Users\Navjot Singh\project\RCS Simulator\src\test\java\com\jio\rcs\operator\unit\wire\AirtelDlrFormatterTest.java
+C:\Users\Navjot Singh\project\RCS Simulator\src\test\java\com\jio\rcs\operator\unit\wire\DotgoDlrFormatterTest.java
+C:\Users\Navjot Singh\project\RCS Simulator\src\test\java\com\jio\rcs\operator\unit\wire\JioDlrFormatterTest.java
+C:\Users\Navjot Singh\project\RCS Simulator\src\test\java\com\jio\rcs\operator\unit\wire\ViDlrFormatterTest.java

@@ -2,6 +2,7 @@ package com.jio.rcs.operator.callback;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jio.rcs.operator.config.ProviderProperties;
+import com.jio.rcs.operator.config.WireProviderProperties;
 import com.jio.rcs.operator.metrics.RuntimeMetricsRecorder;
 import com.jio.rcs.operator.model.CallbackAttempt;
 import com.jio.rcs.operator.model.MessageContext;
@@ -9,6 +10,8 @@ import com.jio.rcs.operator.model.StatusHistoryEntry;
 import com.jio.rcs.operator.scheduler.DlrScheduler;
 import com.jio.rcs.operator.statemachine.MessageState;
 import com.jio.rcs.operator.util.IstTime;
+import com.jio.rcs.operator.wire.dlr.DlrFormatter;
+import com.jio.rcs.operator.wire.dlr.DlrFormatterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -16,6 +19,7 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -47,9 +51,21 @@ public class CallbackEngine {
     private final DlrScheduler dlrScheduler;
     private final CallbackContentMapper contentMapper;
     private final RuntimeMetricsRecorder metricsRecorder;
+    private final DlrFormatterRegistry dlrFormatterRegistry;
+    private final WireProviderProperties wireProviderProperties;
 
     public void deliver(MessageContext message) {
         MessageState state = MessageState.valueOf(message.getStatus());
+
+        // Messages ingested through a real-provider wire controller (see
+        // com.jio.rcs.operator.wire) get a DLR in that provider's own real
+        // format instead of this simulator's self-designed CallbackEnvelope
+        // - see DlrFormatter's class Javadoc for why this exists.
+        if (message.getProviderProfile() != null && !message.getProviderProfile().isBlank()) {
+            deliverWireFormat(message, state);
+            return;
+        }
+
         DlrWebhookMapping.Mapping mapping = DlrWebhookMapping.forState(state);
 
         if (mapping == null || mapping.eventType() == DlrWebhookMapping.EventType.NONE) {
@@ -68,6 +84,34 @@ public class CallbackEngine {
 
         CallbackEnvelope envelope = buildEnvelope(message, state, mapping);
         String json = writeJson(envelope);
+        message.setCallbackStatus("PENDING");
+        attempt(message, callbackUrl, json, 1);
+    }
+
+    private void deliverWireFormat(MessageContext message, MessageState state) {
+        String profile = message.getProviderProfile();
+        Optional<DlrFormatter> formatter = dlrFormatterRegistry.find(profile);
+        if (formatter.isEmpty()) {
+            log.warn("No DlrFormatter registered for wire profile '{}' (message {}); no webhook sent",
+                    profile, message.getProviderMessageId());
+            return;
+        }
+
+        Optional<Object> payload = formatter.get().build(message, state);
+        if (payload.isEmpty()) {
+            // This provider's real contract has no DLR event for this
+            // state (e.g. ACCEPTED/QUEUED for every profile so far).
+            return;
+        }
+
+        String callbackUrl = wireProviderProperties.resolveCallbackUrl(profile);
+        if (callbackUrl == null || callbackUrl.isBlank()) {
+            log.debug("No callback URL configured for wire profile '{}' (operator.wire.profiles.{}.callback-url); skipping webhook for message {}",
+                    profile, profile, message.getProviderMessageId());
+            return;
+        }
+
+        String json = writeJson(payload.get());
         message.setCallbackStatus("PENDING");
         attempt(message, callbackUrl, json, 1);
     }
@@ -319,9 +363,9 @@ public class CallbackEngine {
         return providerProperties.getCallbackUrl();
     }
 
-    private String writeJson(CallbackEnvelope envelope) {
+    private String writeJson(Object body) {
         try {
-            return objectMapper.writeValueAsString(envelope);
+            return objectMapper.writeValueAsString(body);
         } catch (Exception e) {
             log.error("Failed to serialize callback payload", e);
             return "{}";

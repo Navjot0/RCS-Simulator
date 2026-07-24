@@ -18,6 +18,7 @@ C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\c
 C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\config\QueueWorkerConfigReporter.java
 C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\config\RestClientConfig.java
 C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\config\SwaggerConfig.java
+C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\config\WireProviderProperties.java
 C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\controller\BulkMessageController.java
 C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\controller\CheckCapabilityController.java
 C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\controller\MediaController.java
@@ -49,6 +50,7 @@ C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\e
 C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\exception\RateLimitExceededException.java
 C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\exception\ResourceNotFoundException.java
 C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\exception\UnsupportedMediaFileException.java
+C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\exception\WireProfileDisabledException.java
 C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\mapper\MessageMapper.java
 C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\metrics\LatencyRecorder.java
 C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\metrics\MetricsService.java
@@ -99,3 +101,15 @@ C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\s
 C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\util\IdGenerator.java
 C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\util\IstTime.java
 C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\util\ProbabilityUtil.java
+C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\wire\AirtelWireController.java
+C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\wire\dlr\AirtelDlrFormatter.java
+C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\wire\dlr\DlrFormatter.java
+C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\wire\dlr\DlrFormatterRegistry.java
+C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\wire\dlr\DotgoDlrFormatter.java
+C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\wire\dlr\JioDlrFormatter.java
+C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\wire\dlr\ViDlrFormatter.java
+C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\wire\DotgoWireController.java
+C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\wire\JioWireController.java
+C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\wire\OAuthTokenSupport.java
+C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\wire\ViWireController.java
+C:\Users\Navjot Singh\project\RCS Simulator\src\main\java\com\jio\rcs\operator\wire\WireIngestService.java

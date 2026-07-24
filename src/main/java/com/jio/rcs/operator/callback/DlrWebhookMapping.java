@@ -26,7 +26,19 @@ public final class DlrWebhookMapping {
 
     public enum EventType {
         MESSAGE_DISPATCH("message_dispatch"),
-        MESSAGE_DELIVERY("message_delivery"),
+        // Wire value is "delivery_report", not the more obvious
+        // "message_delivery": confirmed by reading the CPaaS's own
+        // JioRcsWebhookProcessor::mapNewFormatEventType(), whose lookup
+        // table only recognizes event_type "message_dispatch",
+        // "message_status", or "delivery_report" - "message_delivery" isn't
+        // a key at all, so every DELIVERED/DISPLAYED/FAILED/REJECTED/
+        // EXPIRED/UNKNOWN webhook this simulator sent under the old value
+        // silently failed to match on the consuming side ("Unknown
+        // event_type and status combination") and never updated the
+        // message. The MESSAGE_DELIVERY enum constant itself (used for the
+        // dispatch-vs-delivery branching in CallbackEngine) is unchanged -
+        // only the string actually put on the wire.
+        MESSAGE_DELIVERY("delivery_report"),
         NONE(null);
 
         private final String wireValue;
