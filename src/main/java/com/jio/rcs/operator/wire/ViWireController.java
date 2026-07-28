@@ -41,7 +41,7 @@ public class ViWireController {
     public ResponseEntity<ObjectNode> send(@PathVariable String senderId, @RequestBody JsonNode body) {
         String to = body.path("messageContact").path("userContact").asText(null);
         JsonNode rcsMessage = body.has("RCSMessage") ? body.get("RCSMessage") : null;
-        String msgId = IdGenerator.providerMessageId("VI");
+        String msgId = IdGenerator.providerMessageId("SIM");
 
         wireIngestService.ingest("vi", to, inferType(rcsMessage), rcsMessage, msgId, Map.of("botId", senderId));
 

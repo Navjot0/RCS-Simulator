@@ -39,7 +39,7 @@ public class DotgoWireController {
     public ResponseEntity<ObjectNode> sendLegacy(@PathVariable String senderId, @RequestBody JsonNode body) {
         String to = body.path("messageContact").path("userContact").asText(null);
         JsonNode rcsMessage = body.has("RCSMessage") ? body.get("RCSMessage") : null;
-        String msgId = IdGenerator.providerMessageId("DOTGO");
+        String msgId = IdGenerator.providerMessageId("SIM");
 
         wireIngestService.ingest("dotgo", to, inferLegacyType(rcsMessage), rcsMessage, msgId, Map.of("botId", senderId));
 
@@ -58,7 +58,7 @@ public class DotgoWireController {
                                                          @RequestParam("botId") String botId,
                                                          @RequestBody JsonNode body) {
         JsonNode contentMessage = body.has("contentMessage") ? body.get("contentMessage") : null;
-        String msgId = IdGenerator.providerMessageId("DOTGO");
+        String msgId = IdGenerator.providerMessageId("SIM");
 
         wireIngestService.ingest("dotgo", phone, inferAgentMessagesType(contentMessage), contentMessage, msgId, Map.of("botId", botId));
 

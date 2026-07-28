@@ -35,7 +35,7 @@ public class AirtelWireController {
     public ResponseEntity<ObjectNode> send(@PathVariable String version, @RequestBody JsonNode body) {
         String to = body.path("msisdn").asText(null);
         String agentId = body.path("agentId").asText(null);
-        String msgId = IdGenerator.providerMessageId("AIRTEL");
+        String msgId = IdGenerator.providerMessageId("SIM");
 
         wireIngestService.ingest("airtel", to, "template", body, msgId,
                 agentId != null ? Map.of("botId", agentId) : Map.of());
