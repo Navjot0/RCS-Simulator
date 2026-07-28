@@ -318,12 +318,21 @@ public class CallbackEngine {
 
         if (result.isSuccess()) {
             message.setCallbackStatus("DELIVERED");
-            // DEBUG, not INFO - fires once per successful callback delivery
-            // (the common case) - see MessageProcessor for why per-message
-            // logging defaults to DEBUG in this simulator. DEAD_LETTERED
-            // below stays at WARN since that's a genuine failure condition,
-            // not routine traffic.
-            log.debug("Callback for message {} delivered on attempt {}", message.getProviderMessageId(), attemptNumber);
+            // INFO, unlike most other per-message lines in this class (see
+            // MessageProcessor for why those default to DEBUG) - a delivered
+            // DLR is the one event worth seeing by default: it's the actual
+            // confirmation that a webhook reached its destination, and
+            // without it the log otherwise only ever shows failures/DLQ
+            // (WARN), never successful deliveries, which made it look like
+            // nothing was ever landing even when most callbacks succeeded.
+            log.info("DLR delivered: message={} status={} provider={} url={} httpStatus={} attempt={}",
+                    message.getProviderMessageId(),
+                    message.getStatus(),
+                    message.getProviderProfile() != null && !message.getProviderProfile().isBlank()
+                            ? message.getProviderProfile() : "self-designed",
+                    callbackUrl,
+                    result.getHttpStatusCode(),
+                    attemptNumber);
             return;
         }
 
