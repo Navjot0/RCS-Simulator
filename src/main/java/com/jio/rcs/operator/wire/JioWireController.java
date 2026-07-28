@@ -3,6 +3,7 @@ package com.jio.rcs.operator.wire;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jio.rcs.operator.config.WireProviderProperties;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,7 @@ public class JioWireController {
 
     private final WireIngestService wireIngestService;
     private final ObjectMapper objectMapper;
+    private final WireProviderProperties wireProviderProperties;
 
     @PostMapping("/messaging/users/{to}/assistantMessages/async")
     @Operation(summary = "Accept a message in Jio's real assistantMessages wire format")
@@ -68,7 +70,7 @@ public class JioWireController {
                                                        @RequestParam(required = false) String client_id,
                                                        @RequestParam(required = false) String client_secret,
                                                        @RequestParam(required = false) String scope) {
-        return ResponseEntity.ok(OAuthTokenSupport.simulatedToken());
+        return ResponseEntity.ok(OAuthTokenSupport.simulatedToken(wireProviderProperties.getStaticAccessToken()));
     }
 
     private String inferMessageType(JsonNode content) {

@@ -30,6 +30,17 @@ public class WireProviderProperties {
 
     private Map<String, Profile> profiles = new LinkedHashMap<>();
 
+    /**
+     * Single fixed OAuth2 access token shared by every wire profile's
+     * simulated token endpoint (Jio/Dotgo/VI) - see
+     * {@code operator.wire.static-access-token}. Deliberately one shared
+     * value across all providers rather than per-profile, per explicit
+     * request, so a known value can be hardcoded for manual testing
+     * (curl/Postman) or reused by a future Bearer validation layer, instead
+     * of a fresh token being generated on every token request.
+     */
+    private String staticAccessToken = "simulator-access-token";
+
     @Data
     public static class Profile {
         /** Set to false to make that provider's wire controller(s) return 404, e.g. to disable a profile you're not currently testing against. */

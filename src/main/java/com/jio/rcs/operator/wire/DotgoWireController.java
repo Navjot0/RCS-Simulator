@@ -3,6 +3,7 @@ package com.jio.rcs.operator.wire;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jio.rcs.operator.config.WireProviderProperties;
 import com.jio.rcs.operator.util.IdGenerator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,6 +31,7 @@ public class DotgoWireController {
 
     private final WireIngestService wireIngestService;
     private final ObjectMapper objectMapper;
+    private final WireProviderProperties wireProviderProperties;
 
     /** Legacy: POST {base_url}/rcs/bot/v1/{senderId}/messages/async, body {"messageContact":{"userContact":...},"ttl":...,"RCSMessage":{...}}. */
     @PostMapping("/rcs/bot/v1/{senderId}/messages/async")
@@ -69,7 +71,7 @@ public class DotgoWireController {
     @PostMapping("/auth/oauth/token")
     @Operation(summary = "Simulated Dotgo OAuth2 client-credentials token endpoint")
     public ResponseEntity<Map<String, Object>> token(@RequestParam(required = false) String grant_type) {
-        return ResponseEntity.ok(OAuthTokenSupport.simulatedToken());
+        return ResponseEntity.ok(OAuthTokenSupport.simulatedToken(wireProviderProperties.getStaticAccessToken()));
     }
 
     private String inferLegacyType(JsonNode rcsMessage) {

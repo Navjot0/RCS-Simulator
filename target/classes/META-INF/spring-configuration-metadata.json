@@ -429,6 +429,13 @@
       "name": "operator.wire.profiles",
       "type": "java.util.Map<java.lang.String,com.jio.rcs.operator.config.WireProviderProperties$Profile>",
       "sourceType": "com.jio.rcs.operator.config.WireProviderProperties"
+    },
+    {
+      "name": "operator.wire.static-access-token",
+      "type": "java.lang.String",
+      "description": "Single fixed OAuth2 access token shared by every wire profile's simulated token endpoint (Jio\/Dotgo\/VI) - see {@code operator.wire.static-access-token}. Deliberately one shared value across all providers rather than per-profile, per explicit request, so a known value can be hardcoded for manual testing (curl\/Postman) or reused by a future Bearer validation layer, instead of a fresh token being generated on every token request.",
+      "sourceType": "com.jio.rcs.operator.config.WireProviderProperties",
+      "defaultValue": "simulator-access-token"
     }
   ],
   "hints": []
