@@ -104,7 +104,20 @@ public class CallbackEngine {
             return;
         }
 
-        String callbackUrl = wireProviderProperties.resolveCallbackUrl(profile);
+        // A multi-instance request (/{instance}/wire/{provider}/...) has
+        // already had its callback URL resolved once, up front, at
+        // ingestion time (see com.jio.rcs.operator.wire.CallbackUrlResolver
+        // / WireIngestService) and stored on MessageContext.callbackUrl -
+        // the same per-message field the self-designed contract uses for a
+        // request-supplied override. CallbackEngine deliberately never
+        // learns which instance (dev/staging/cerf/...) a message came from;
+        // it only ever sees the already-resolved destination URL. A legacy,
+        // un-prefixed /wire/{provider}/... request never sets this field,
+        // so it falls back to the single per-profile default exactly as
+        // before multi-instance routing existed.
+        String callbackUrl = (message.getCallbackUrl() != null && !message.getCallbackUrl().isBlank())
+                ? message.getCallbackUrl()
+                : wireProviderProperties.resolveCallbackUrl(profile);
         if (callbackUrl == null || callbackUrl.isBlank()) {
             log.debug("No callback URL configured for wire profile '{}' (operator.wire.profiles.{}.callback-url); skipping webhook for message {}",
                     profile, profile, message.getProviderMessageId());

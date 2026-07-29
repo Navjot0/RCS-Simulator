@@ -22,10 +22,17 @@ import java.util.Map;
  * returns it in the send response, which the CPaaS then stores as its own
  * {@code external_message_id} (see {@code DotgoRcsProvider::makeApiRequest()}
  * / {@code normalizeDotgoAgentMessagesHttpResponse()}).
+ *
+ * <p>Every mapping is registered both un-prefixed ({@code /wire/dotgo/...} -
+ * legacy, backward-compatible; DLRs use the single default
+ * {@code operator.wire.profiles.dotgo.callback-url}) and with a leading
+ * {@code /{instance}/wire/dotgo/...} segment (multi-instance routing - DLRs
+ * go to {@code operator.instances.<instance>.profiles.dotgo.callback-url}
+ * instead, resolved once at ingestion; see {@link CallbackUrlResolver}).
  */
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/wire/dotgo")
+@RequestMapping({"/wire/dotgo", "/{instance}/wire/dotgo"})
 @Tag(name = "Wire format - Dotgo", description = "Real Dotgo RBM contract, both legacy bot/async and agentMessages APIs (see README 'Real provider wire format')")
 public class DotgoWireController {
 
@@ -36,12 +43,13 @@ public class DotgoWireController {
     /** Legacy: POST {base_url}/rcs/bot/v1/{senderId}/messages/async, body {"messageContact":{"userContact":...},"ttl":...,"RCSMessage":{...}}. */
     @PostMapping("/rcs/bot/v1/{senderId}/messages/async")
     @Operation(summary = "Accept a message in Dotgo's legacy bot/async wire format")
-    public ResponseEntity<ObjectNode> sendLegacy(@PathVariable String senderId, @RequestBody JsonNode body) {
+    public ResponseEntity<ObjectNode> sendLegacy(@PathVariable(required = false) String instance,
+                                                  @PathVariable String senderId, @RequestBody JsonNode body) {
         String to = body.path("messageContact").path("userContact").asText(null);
         JsonNode rcsMessage = body.has("RCSMessage") ? body.get("RCSMessage") : null;
         String msgId = IdGenerator.providerMessageId("SIM");
 
-        wireIngestService.ingest("dotgo", to, inferLegacyType(rcsMessage), rcsMessage, msgId, Map.of("botId", senderId));
+        wireIngestService.ingest(instance, "dotgo", to, inferLegacyType(rcsMessage), rcsMessage, msgId, Map.of("botId", senderId));
 
         ObjectNode rcsResponse = objectMapper.createObjectNode();
         rcsResponse.put("msgId", msgId);
@@ -54,13 +62,14 @@ public class DotgoWireController {
     /** New: POST {base_url}/rcs/v1/phones/{phone}/agentMessages/async?botId=..., body {"contentMessage":{...},"ttl":...}. */
     @PostMapping("/rcs/v1/phones/{phone}/agentMessages/async")
     @Operation(summary = "Accept a message in Dotgo's newer agentMessages wire format")
-    public ResponseEntity<ObjectNode> sendAgentMessages(@PathVariable String phone,
+    public ResponseEntity<ObjectNode> sendAgentMessages(@PathVariable(required = false) String instance,
+                                                         @PathVariable String phone,
                                                          @RequestParam("botId") String botId,
                                                          @RequestBody JsonNode body) {
         JsonNode contentMessage = body.has("contentMessage") ? body.get("contentMessage") : null;
         String msgId = IdGenerator.providerMessageId("SIM");
 
-        wireIngestService.ingest("dotgo", phone, inferAgentMessagesType(contentMessage), contentMessage, msgId, Map.of("botId", botId));
+        wireIngestService.ingest(instance, "dotgo", phone, inferAgentMessagesType(contentMessage), contentMessage, msgId, Map.of("botId", botId));
 
         ObjectNode response = objectMapper.createObjectNode();
         response.put("messageId", msgId);

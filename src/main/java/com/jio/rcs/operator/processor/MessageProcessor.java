@@ -42,7 +42,7 @@ public class MessageProcessor {
     private final RuntimeMetricsRecorder metricsRecorder;
 
     public MessageContext ingest(SendMessageRequest request, String batchId) {
-        return doIngest(request, batchId, null, null, null);
+        return doIngest(request, batchId, null, null, null, null);
     }
 
     /**
@@ -56,15 +56,39 @@ public class MessageProcessor {
      */
     public MessageContext ingestWire(SendMessageRequest request, String providerProfile,
                                       String overrideProviderMessageId, Map<String, String> wireAttributes) {
-        return doIngest(request, null, providerProfile, overrideProviderMessageId, wireAttributes);
+        return doIngest(request, null, providerProfile, overrideProviderMessageId, wireAttributes, null);
+    }
+
+    /**
+     * Same as {@link #ingestWire(SendMessageRequest, String, String, Map)},
+     * but for a multi-instance wire request ({@code /{instance}/wire/{provider}/...})
+     * whose DLR callback destination has already been resolved up front by
+     * {@link com.jio.rcs.operator.wire.CallbackUrlResolver} - see
+     * {@link com.jio.rcs.operator.wire.WireIngestService}. The resolved URL
+     * is stored on {@link MessageContext#getCallbackUrl()} - the same field
+     * the self-designed contract already uses for a per-message callback
+     * override - rather than adding any new "instance" state to
+     * MessageContext; the async pipeline and CallbackEngine never need to
+     * know which CPaaS instance a message came from, only where to deliver
+     * its DLR.
+     *
+     * @param resolvedCallbackUrl the full callback URL already resolved for this instance+provider; null/blank for a legacy un-prefixed {@code /wire/{provider}/...} request, in which case CallbackEngine falls back to the profile's single default (operator.wire.profiles.&lt;provider&gt;.callback-url) exactly as before.
+     */
+    public MessageContext ingestWire(SendMessageRequest request, String providerProfile,
+                                      String overrideProviderMessageId, Map<String, String> wireAttributes,
+                                      String resolvedCallbackUrl) {
+        return doIngest(request, null, providerProfile, overrideProviderMessageId, wireAttributes, resolvedCallbackUrl);
     }
 
     private MessageContext doIngest(SendMessageRequest request, String batchId, String providerProfile,
-                                     String overrideProviderMessageId, Map<String, String> wireAttributes) {
+                                     String overrideProviderMessageId, Map<String, String> wireAttributes,
+                                     String resolvedCallbackUrl) {
         String providerMessageId = (overrideProviderMessageId != null && !overrideProviderMessageId.isBlank())
                 ? overrideProviderMessageId
                 : IdGenerator.providerMessageId(providerProperties.getIdentity().getProviderCode());
-        String callbackUrl = request.getCallbackUrl();
+        String callbackUrl = (resolvedCallbackUrl != null && !resolvedCallbackUrl.isBlank())
+                ? resolvedCallbackUrl
+                : request.getCallbackUrl();
 
         MessageContext message = messageMapper.toContext(request, providerMessageId,
                 MessageState.ACCEPTED.name(), callbackUrl);

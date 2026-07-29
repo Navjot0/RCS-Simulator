@@ -20,10 +20,17 @@ import java.util.Map;
  * Airtel has no separate OAuth step - every request carries HTTP Basic
  * auth directly (see {@code bootstrapAgentContext()}), which this simulator
  * doesn't validate, same as every other wire profile.
+ *
+ * <p>Every mapping is registered both un-prefixed ({@code /wire/airtel/...} -
+ * legacy, backward-compatible; DLRs use the single default
+ * {@code operator.wire.profiles.airtel.callback-url}) and with a leading
+ * {@code /{instance}/wire/airtel/...} segment (multi-instance routing -
+ * DLRs go to {@code operator.instances.<instance>.profiles.airtel.callback-url}
+ * instead, resolved once at ingestion; see {@link CallbackUrlResolver}).
  */
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/wire/airtel")
+@RequestMapping({"/wire/airtel", "/{instance}/wire/airtel"})
 @Tag(name = "Wire format - Airtel", description = "Real Airtel RCS contract (see README 'Real provider wire format')")
 public class AirtelWireController {
 
@@ -32,12 +39,13 @@ public class AirtelWireController {
 
     @PostMapping("/conversation-message-acceptor/{version}/rcs/message/send")
     @Operation(summary = "Accept a message in Airtel's real message/send wire format")
-    public ResponseEntity<ObjectNode> send(@PathVariable String version, @RequestBody JsonNode body) {
+    public ResponseEntity<ObjectNode> send(@PathVariable(required = false) String instance,
+                                            @PathVariable String version, @RequestBody JsonNode body) {
         String to = body.path("msisdn").asText(null);
         String agentId = body.path("agentId").asText(null);
         String msgId = IdGenerator.providerMessageId("SIM");
 
-        wireIngestService.ingest("airtel", to, "template", body, msgId,
+        wireIngestService.ingest(instance, "airtel", to, "template", body, msgId,
                 agentId != null ? Map.of("botId", agentId) : Map.of());
 
         ObjectNode response = objectMapper.createObjectNode();

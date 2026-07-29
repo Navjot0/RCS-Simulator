@@ -8,6 +8,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -78,6 +79,34 @@ public class ProviderProperties {
      * - this is just what's used when a request doesn't set one.
      */
     private String callbackUrl = "http://localhost:9000/webhook";
+
+    /**
+     * Multi-instance DLR callback routing: {@code operator.instances.<name>.profiles.<provider>.callback-url}.
+     * Lets one simulator deployment serve several CPaaS instances (dev/staging/cerf/...)
+     * that each need their own callback destination per real-provider wire
+     * profile, selected via the {@code /{instance}/wire/{provider}/...} URL
+     * prefix (see {@link com.jio.rcs.operator.wire.CallbackUrlResolver}).
+     * Deliberately a plain {@code Map} - adding a new instance is a config-only
+     * change, no Java code touches instance names. Kept separate from
+     * {@link WireProviderProperties} (which still owns each profile's
+     * enabled/disabled state and its single legacy default callback-url for
+     * the un-prefixed {@code /wire/{provider}/...} routes) since this is a
+     * distinct, orthogonal concern: routing the same profile's DLR to a
+     * different destination per calling CPaaS instance, not per-profile
+     * defaults.
+     */
+    private Map<String, Instance> instances = new LinkedHashMap<>();
+
+    @Data
+    public static class Instance {
+        private Map<String, InstanceProfile> profiles = new LinkedHashMap<>();
+    }
+
+    @Data
+    public static class InstanceProfile {
+        /** Full, complete callback URL - never built from a base-url + path suffix, since environments don't share a common host or path shape. */
+        private String callbackUrl;
+    }
 
     @Data
     public static class Identity {

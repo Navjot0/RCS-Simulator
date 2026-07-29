@@ -28,10 +28,21 @@ import java.util.Map;
  * one back from the response body - so this id, not one this simulator
  * would otherwise mint itself, must be echoed back verbatim in every later
  * DLR for the CPaaS to correlate it (see {@link com.jio.rcs.operator.wire.dlr.JioDlrFormatter}).
+ *
+ * <p>Every mapping is registered both un-prefixed ({@code /wire/jio/...} -
+ * legacy, backward-compatible; DLRs use the single default
+ * {@code operator.wire.profiles.jio.callback-url}) and with a leading
+ * {@code /{instance}/wire/jio/...} segment (multi-instance routing - DLRs
+ * go to {@code operator.instances.<instance>.profiles.jio.callback-url}
+ * instead, resolved once at ingestion; see {@link CallbackUrlResolver}).
+ * {@code instance} is captured only on the send endpoint, where it's needed
+ * to resolve a callback destination - the token endpoint's behavior doesn't
+ * depend on which CPaaS instance is asking, so the path variable is simply
+ * left unbound there.
  */
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/wire/jio")
+@RequestMapping({"/wire/jio", "/{instance}/wire/jio"})
 @Tag(name = "Wire format - Jio", description = "Real Jio Business Messaging contract (see README 'Real provider wire format')")
 public class JioWireController {
 
@@ -41,7 +52,8 @@ public class JioWireController {
 
     @PostMapping("/messaging/users/{to}/assistantMessages/async")
     @Operation(summary = "Accept a message in Jio's real assistantMessages wire format")
-    public ResponseEntity<ObjectNode> send(@PathVariable String to,
+    public ResponseEntity<ObjectNode> send(@PathVariable(required = false) String instance,
+                                            @PathVariable String to,
                                             @RequestParam("messageId") String messageId,
                                             @RequestParam(value = "assistantId", required = false) String assistantId,
                                             @RequestBody(required = false) JsonNode body) {
@@ -51,7 +63,7 @@ public class JioWireController {
             wireAttributes.put("botId", assistantId);
         }
 
-        wireIngestService.ingest("jio", to, inferMessageType(content), content, messageId, wireAttributes);
+        wireIngestService.ingest(instance, "jio", to, inferMessageType(content), content, messageId, wireAttributes);
 
         ObjectNode response = objectMapper.createObjectNode();
         response.put("name", "messaging/users/" + to + "/assistantMessages/" + messageId);

@@ -25,10 +25,17 @@ import java.util.Map;
  * apart, and because the two providers' DLR webhook formats (see
  * {@link com.jio.rcs.operator.wire.dlr.ViDlrFormatter} vs
  * {@link com.jio.rcs.operator.wire.dlr.DotgoDlrFormatter}) are unrelated.
+ *
+ * <p>Every mapping is registered both un-prefixed ({@code /wire/vi/...} -
+ * legacy, backward-compatible; DLRs use the single default
+ * {@code operator.wire.profiles.vi.callback-url}) and with a leading
+ * {@code /{instance}/wire/vi/...} segment (multi-instance routing - DLRs go
+ * to {@code operator.instances.<instance>.profiles.vi.callback-url}
+ * instead, resolved once at ingestion; see {@link CallbackUrlResolver}).
  */
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/wire/vi")
+@RequestMapping({"/wire/vi", "/{instance}/wire/vi"})
 @Tag(name = "Wire format - VI", description = "Real VI RCS contract (see README 'Real provider wire format')")
 public class ViWireController {
 
@@ -38,12 +45,13 @@ public class ViWireController {
 
     @PostMapping("/rcs/bot/v1/{senderId}/messages/async")
     @Operation(summary = "Accept a message in VI's real bot/async wire format")
-    public ResponseEntity<ObjectNode> send(@PathVariable String senderId, @RequestBody JsonNode body) {
+    public ResponseEntity<ObjectNode> send(@PathVariable(required = false) String instance,
+                                            @PathVariable String senderId, @RequestBody JsonNode body) {
         String to = body.path("messageContact").path("userContact").asText(null);
         JsonNode rcsMessage = body.has("RCSMessage") ? body.get("RCSMessage") : null;
         String msgId = IdGenerator.providerMessageId("SIM");
 
-        wireIngestService.ingest("vi", to, inferType(rcsMessage), rcsMessage, msgId, Map.of("botId", senderId));
+        wireIngestService.ingest(instance, "vi", to, inferType(rcsMessage), rcsMessage, msgId, Map.of("botId", senderId));
 
         ObjectNode rcsResponse = objectMapper.createObjectNode();
         rcsResponse.put("msgId", msgId);
