@@ -1,8 +1,11 @@
 package com.jio.rcs.operator.unit.wire;
 
-import com.jio.rcs.operator.config.ProviderProperties;
+import com.jio.rcs.operator.config.instance.InstanceConfig;
+import com.jio.rcs.operator.config.instance.InstanceRegistry;
+import com.jio.rcs.operator.config.instance.ProfileConfig;
 import com.jio.rcs.operator.exception.UnknownWireInstanceException;
 import com.jio.rcs.operator.exception.WireCallbackNotConfiguredException;
+import com.jio.rcs.operator.exception.WireInstanceDisabledException;
 import com.jio.rcs.operator.wire.CallbackUrlResolver;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,45 +27,52 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * Covers the multi-instance DLR callback routing spec's test scenarios that
  * are cheapest to verify directly against {@link CallbackUrlResolver} in
- * isolation (no Spring context, no HTTP layer): per-instance / per-provider
- * resolution correctness, independence between instances and between
- * providers, unknown-instance / missing-config / blank-callback-url
- * rejection, and concurrent resolution across instances never mixing
- * results (the resolver is stateless, so this is really a sanity check that
- * it stays that way).
+ * isolation (no Spring context, no HTTP layer, no filesystem/JSON parsing):
+ * per-instance / per-provider resolution correctness, independence between
+ * instances and between providers, unknown-instance / disabled-instance /
+ * missing-config / blank-callback-url rejection, and concurrent resolution
+ * across instances never mixing results (the resolver is stateless, so
+ * this is really a sanity check that it stays that way).
  *
- * <p>dev/staging/cerf below are configured with the same URLs actually set
- * in {@code application.properties} (webhook.gtsstaging.com,
+ * <p>{@link CallbackUrlResolver} itself does nothing but delegate to
+ * {@link InstanceRegistry#resolveCallbackUrl(String, String)}, so this test
+ * builds an {@link InstanceRegistry} directly from an in-memory {@code
+ * Map<String, InstanceConfig>} via its test-only constructor - the exact
+ * same shape {@link com.jio.rcs.operator.config.instance.InstanceConfigLoader}
+ * would have produced from real {@code *.json} files, without touching the
+ * filesystem. See {@code InstanceConfigLoaderTest} for coverage of the
+ * directory-scanning/parsing/validation behaviour itself.
+ *
+ * <p>dev/staging/cerf below use the same URLs actually shipped in {@code
+ * src/test/resources/instances/*.json} (webhook.gtsstaging.com,
  * webhook.cpaas.globeteleservices.com, webhook.cerfsolutions.com) rather
- * than placeholder domains, and - matching that file - all four providers
- * are configured for all three real instances. A fourth, purely
- * hypothetical {@code uat} instance (not present in application.properties)
- * is used only for the missing-config / blank-callback-url negative cases,
- * standing in for "a new instance that's been partially set up".
+ * than placeholder domains. A fourth, purely hypothetical {@code uat}
+ * instance (not present in that directory) is used only for the
+ * missing-config / blank-callback-url negative cases, standing in for "a
+ * new instance that's been partially set up", and a fifth, {@code
+ * disabled}, instance covers the disabled-instance rejection path.
  */
 class CallbackUrlResolverTest {
 
-    private ProviderProperties providerProperties;
     private CallbackUrlResolver resolver;
 
     @BeforeEach
     void setUp() {
-        providerProperties = new ProviderProperties();
-        Map<String, ProviderProperties.Instance> instances = new LinkedHashMap<>();
+        Map<String, InstanceConfig> instances = new LinkedHashMap<>();
 
-        instances.put("dev", instanceOf(Map.of(
+        instances.put("dev", instanceOf("dev", true, Map.of(
                 "jio", "https://webhook.gtsstaging.com/api/rcs/webhook/jio",
                 "dotgo", "https://webhook.gtsstaging.com/api/rcs/webhook/dotgo",
                 "vi", "https://webhook.gtsstaging.com/api/rcs/webhook/vi",
                 "airtel", "https://webhook.gtsstaging.com/api/rcs/webhook/airtel"
         )));
-        instances.put("staging", instanceOf(Map.of(
+        instances.put("staging", instanceOf("staging", true, Map.of(
                 "jio", "https://webhook.cpaas.globeteleservices.com/api/rcs/webhook/jio",
                 "dotgo", "https://webhook.cpaas.globeteleservices.com/api/rcs/webhook/dotgo",
                 "vi", "https://webhook.cpaas.globeteleservices.com/api/rcs/webhook/vi",
                 "airtel", "https://webhook.cpaas.globeteleservices.com/api/rcs/webhook/airtel"
         )));
-        instances.put("cerf", instanceOf(Map.of(
+        instances.put("cerf", instanceOf("cerf", true, Map.of(
                 "jio", "https://webhook.cerfsolutions.com/api/rcs/webhook/jio",
                 "dotgo", "https://webhook.cerfsolutions.com/api/rcs/webhook/dotgo",
                 "vi", "https://webhook.cerfsolutions.com/api/rcs/webhook/vi",
@@ -77,22 +87,22 @@ class CallbackUrlResolverTest {
         Map<String, String> uatProfiles = new LinkedHashMap<>();
         uatProfiles.put("vi", "https://uat.example-cpaas.internal/api/rcs/webhook/vi");
         uatProfiles.put("airtel", "   ");
-        instances.put("uat", instanceOf(uatProfiles));
+        instances.put("uat", instanceOf("uat", true, uatProfiles));
 
-        providerProperties.setInstances(instances);
-        resolver = new CallbackUrlResolver(providerProperties);
+        // A known, fully-configured instance that's simply been switched off -
+        // must be rejected outright, distinct from "unknown" and from
+        // "missing/blank callback".
+        instances.put("disabled", instanceOf("disabled", false, Map.of(
+                "vi", "https://disabled.example.com/vi/webhook"
+        )));
+
+        resolver = new CallbackUrlResolver(new InstanceRegistry(instances));
     }
 
-    private ProviderProperties.Instance instanceOf(Map<String, String> profileCallbackUrls) {
-        ProviderProperties.Instance instance = new ProviderProperties.Instance();
-        Map<String, ProviderProperties.InstanceProfile> profiles = new LinkedHashMap<>();
-        profileCallbackUrls.forEach((provider, url) -> {
-            ProviderProperties.InstanceProfile profile = new ProviderProperties.InstanceProfile();
-            profile.setCallbackUrl(url);
-            profiles.put(provider, profile);
-        });
-        instance.setProfiles(profiles);
-        return instance;
+    private InstanceConfig instanceOf(String name, boolean enabled, Map<String, String> profileCallbackUrls) {
+        Map<String, ProfileConfig> profiles = new LinkedHashMap<>();
+        profileCallbackUrls.forEach((provider, url) -> profiles.put(provider, new ProfileConfig(url)));
+        return new InstanceConfig(name, enabled, profiles);
     }
 
     // 1-3: dev/staging/cerf VI resolution
@@ -191,9 +201,16 @@ class CallbackUrlResolverTest {
                 .isInstanceOf(WireCallbackNotConfiguredException.class);
     }
 
+    // 12: disabled instance is rejected, distinct from unknown/missing-config
+    @Test
+    void disabledInstanceIsRejected() {
+        assertThatThrownBy(() -> resolver.resolve("disabled", "vi"))
+                .isInstanceOf(WireInstanceDisabledException.class);
+    }
+
     @Test
     void doesNotFallBackToAnotherInstanceOrProviderOnFailure() {
-        // Neither failure mode should ever silently resolve to some other
+        // No failure mode should ever silently resolve to some other
         // instance's or provider's URL - each must throw, not substitute.
         assertThatThrownBy(() -> resolver.resolve("unknown", "vi"))
                 .isInstanceOf(UnknownWireInstanceException.class)
@@ -202,5 +219,8 @@ class CallbackUrlResolverTest {
                 .isInstanceOf(WireCallbackNotConfiguredException.class)
                 .hasMessageContaining("uat")
                 .hasMessageContaining("dotgo");
+        assertThatThrownBy(() -> resolver.resolve("disabled", "vi"))
+                .isInstanceOf(WireInstanceDisabledException.class)
+                .hasMessageContaining("disabled");
     }
 }
