@@ -54,12 +54,17 @@ public class CallbackUrlResolver {
             throw new WireCallbackNotConfiguredException(instance, provider);
         }
 
-        // INFO, not DEBUG - this fires once per multi-instance wire send, not
-        // once per DLR/retry, so it's cheap, and it's exactly the line you
-        // want when confirming a newly added instance actually routes where
-        // you expect. Never logs credentials/tokens - callbackUrl is a plain
+        // DEBUG, not INFO (reversed from an earlier deliberate choice - see
+        // git history: this fires once per multi-instance wire send, not
+        // once per DLR/retry, so it looked cheap in isolation - but "once
+        // per send" is still once per request at TPS scale, up to 20,000+/sec
+        // on the request-handling thread itself. Same virtual-thread-pinning
+        // risk as CallbackEngine's DLR-delivered line - see that class for
+        // the full explanation. Set logging.level.com.jio.rcs.operator=DEBUG
+        // when confirming a newly added instance actually routes where you
+        // expect. Never logs credentials/tokens - callbackUrl is a plain
         // destination URL, nothing sensitive lives in it.
-        log.info("Resolved wire callback: instance={} provider={} callbackUrl={}", instance, provider, callbackUrl);
+        log.debug("Resolved wire callback: instance={} provider={} callbackUrl={}", instance, provider, callbackUrl);
         return callbackUrl;
     }
 }

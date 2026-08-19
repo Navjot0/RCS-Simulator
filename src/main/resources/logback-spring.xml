@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!--
+        Spring Boot's own default include files - reusing these (rather than
+        redefining conversion rules/pattern) means logging.pattern.console
+        and logging.level.* in application.properties keep working exactly
+        as before; only the appender wiring below changes.
+    -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <!--
+        Wraps the standard CONSOLE appender (defined by the include above)
+        in an AsyncAppender.
+
+        Why: Logback's plain ConsoleAppender writes under a `synchronized`
+        block. On Java 21 virtual threads, a synchronized block pins the
+        calling virtual thread to its carrier (platform) thread instead of
+        letting it unmount while blocked - this is what actually stalled
+        this simulator under a real 20,000 TPS load test, not connection
+        capacity: two very hot per-request log.info() lines
+        (CallbackEngine's "DLR delivered", CallbackUrlResolver's "Resolved
+        wire callback") were together firing tens of thousands of
+        times/sec, and enough virtual threads piling up on that one
+        synchronous appender's lock collapsed effective parallelism for the
+        *entire* app down toward CPU core count (the default carrier-thread
+        pool size), not just logging throughput.
+
+        Downgrading those two lines to DEBUG (see their own comments) fixes
+        the immediate cause, but this appender is the structural fix: any
+        log line that does stay enabled by default (WARN/ERROR - DLQ,
+        retries, startup - or DEBUG during troubleshooting) still funnels
+        through the same synchronous appender otherwise, and could
+        reproduce the exact same stall under enough concurrent volume in
+        the future without anyone changing a log level. AsyncAppender moves
+        the actual write to stdout onto its own dedicated thread via a
+        bounded queue, so no request-handling virtual thread ever blocks on
+        it.
+
+        neverBlock=true: once the queue is full, new log events are DROPPED
+        rather than blocking the caller - the right trade-off for a
+        high-TPS simulator, where losing an occasional log line under
+        extreme overload is far preferable to reintroducing the very stall
+        this appender exists to prevent. queueSize raised well past
+        Logback's 256 default so drops should only happen under genuinely
+        extreme, sustained bursts, not routine load-test traffic.
+    -->
+    <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>4000</queueSize>
+        <neverBlock>true</neverBlock>
+        <includeCallerData>false</includeCallerData>
+        <appender-ref ref="CONSOLE"/>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="ASYNC"/>
+    </root>
+</configuration>

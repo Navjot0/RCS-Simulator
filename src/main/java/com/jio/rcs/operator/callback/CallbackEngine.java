@@ -331,14 +331,20 @@ public class CallbackEngine {
 
         if (result.isSuccess()) {
             message.setCallbackStatus("DELIVERED");
-            // INFO, unlike most other per-message lines in this class (see
-            // MessageProcessor for why those default to DEBUG) - a delivered
-            // DLR is the one event worth seeing by default: it's the actual
-            // confirmation that a webhook reached its destination, and
-            // without it the log otherwise only ever shows failures/DLQ
-            // (WARN), never successful deliveries, which made it look like
-            // nothing was ever landing even when most callbacks succeeded.
-            log.info("DLR delivered: message={} status={} provider={} url={} httpStatus={} attempt={}",
+            // DEBUG, not INFO (reversed from an earlier deliberate choice -
+            // see git history). At low/moderate TPS, a delivered DLR was
+            // worth seeing by default: it's the actual confirmation a
+            // webhook reached its destination, and without it the log
+            // otherwise only ever showed failures/DLQ (WARN), never
+            // successful deliveries. But at 20,000+ TPS with ~2 DLR events
+            // per message, this line alone can fire tens of thousands of
+            // times/sec - enough synchronous log.info() volume (Logback's
+            // default console appender writes under a `synchronized` block)
+            // to pin virtual threads to their carrier threads under Java 21's
+            // Loom semantics and stall the whole app, not just logging. Set
+            // logging.level.com.jio.rcs.operator=DEBUG for troubleshooting
+            // when you need this back.
+            log.debug("DLR delivered: message={} status={} provider={} url={} httpStatus={} attempt={}",
                     message.getProviderMessageId(),
                     message.getStatus(),
                     message.getProviderProfile() != null && !message.getProviderProfile().isBlank()
