@@ -21,9 +21,36 @@ import java.util.List;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    /**
+     * Handled separately from the generic {@link ProviderException} case
+     * below (and matched first - Spring picks the most specific
+     * {@code @ExceptionHandler} for a given thrown type) purely for its log
+     * level. A 429 here is {@code operator.tps.limit} doing exactly its job
+     * under offered load above the configured ceiling - under a real load
+     * test that's not an occasional/noteworthy event, it's the dominant
+     * outcome by volume (seen firing on multiple tomcat-handler threads
+     * within the same millisecond). Logging every single one at WARN was
+     * real per-request overhead (formatting + enqueueing a log line, even
+     * via the AsyncAppender) multiplied across however many hundreds of
+     * thousands of rejections a test generates, on a box that's already
+     * CPU-constrained - contributing to load instead of just reporting it.
+     * DEBUG keeps it available for troubleshooting (set
+     * logging.level.com.jio.rcs.operator=DEBUG) without paying that cost by
+     * default. The rejection itself (HTTP 429 response) is unchanged.
+     */
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<ErrorResponse> handleRateLimitExceeded(RateLimitExceededException ex, HttpServletRequest request) {
+        log.debug("Provider exception [{}]: {}", ex.getErrorCode(), ex.getMessage());
+        return providerExceptionResponse(ex, request);
+    }
+
     @ExceptionHandler(ProviderException.class)
     public ResponseEntity<ErrorResponse> handleProviderException(ProviderException ex, HttpServletRequest request) {
         log.warn("Provider exception [{}]: {}", ex.getErrorCode(), ex.getMessage());
+        return providerExceptionResponse(ex, request);
+    }
+
+    private ResponseEntity<ErrorResponse> providerExceptionResponse(ProviderException ex, HttpServletRequest request) {
         ErrorResponse body = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .status(ex.getHttpStatus().value())
