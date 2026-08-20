@@ -355,6 +355,18 @@ public class CallbackEngine {
             return;
         }
 
+        if (!result.isRetryable()) {
+            // Callback URL not found (404) or its host doesn't exist/can't be
+            // resolved at all (DNS failure) - no number of retries changes
+            // that outcome, so skip straight to DEAD_LETTERED instead of
+            // burning the full retry budget and backoff time on a
+            // destination that will never accept the callback.
+            message.setCallbackStatus("DEAD_LETTERED");
+            log.warn("Callback for message {} moved to Dead Letter Queue immediately - callback URL {} not found (httpStatus={}, error={}), not retrying",
+                    message.getProviderMessageId(), callbackUrl, result.getHttpStatusCode(), result.getErrorMessage());
+            return;
+        }
+
         int maxAttempts = providerProperties.getCallback().getRetry().getMaxAttempts();
         if (attemptNumber >= maxAttempts) {
             message.setCallbackStatus("DEAD_LETTERED");
