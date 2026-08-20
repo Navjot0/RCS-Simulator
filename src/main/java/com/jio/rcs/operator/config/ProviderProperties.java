@@ -200,6 +200,18 @@ public class ProviderProperties {
         @Max(value = MAX_REASONABLE_WORKERS, message = "operator.queue.worker-threads must not exceed " + MAX_REASONABLE_WORKERS)
         private int workerThreads = 32;
 
+        /**
+         * Bound on how long POST /v1/messages (and the wire/bulk
+         * equivalents) will wait to get a message onto the INCOMING queue
+         * before giving up and returning 503 (see IngestionOverloadedException)
+         * instead of continuing to block the client. Only applies to this one
+         * client-facing admission point - every other stage-to-stage handoff
+         * still uses the unbounded, zero-loss-guaranteed publish(). See
+         * MessageProcessor.doIngest() and QueueService.tryPublish's Javadoc.
+         */
+        @Min(value = 1, message = "operator.queue.incoming-publish-timeout-millis must be at least 1")
+        private long incomingPublishTimeoutMillis = 1000;
+
         private int incomingQueueSize = 50000;
         private int validationQueueSize = 50000;
         private int processingQueueSize = 50000;

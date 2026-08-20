@@ -99,10 +99,30 @@ public class MessageProcessor {
         message.setWireAttributes(wireAttributes);
         messageStore.put(message);
 
-        queueService.publish(QueueNames.INCOMING, QueueMessage.builder()
-                .correlationId(providerMessageId)
-                .payload(new IncomingTask(providerMessageId))
-                .build());
+        // Bounded wait, not the unbounded publish() every other stage uses -
+        // this is the client-facing admission point, so an indefinite block
+        // here directly becomes indefinite client-visible response time
+        // (this is what was driving ~1.7-2s average response times and the
+        // resulting SocketTimeoutException volume under sustained overload).
+        // If INCOMING doesn't have space within
+        // operator.queue.incoming-publish-timeout-millis, reject fast with a
+        // clear 503 instead of continuing to hang - see
+        // IngestionOverloadedException's Javadoc for why this doesn't
+        // violate the zero-DLR-loss guarantee (the message was never
+        // accepted in the first place). The message was already written to
+        // MessageStore above - remove it on rejection so GET /v1/messages/{id}
+        // doesn't return a message that was never actually queued.
+        boolean enqueued = queueService.tryPublish(QueueNames.INCOMING, QueueMessage.builder()
+                        .correlationId(providerMessageId)
+                        .payload(new IncomingTask(providerMessageId))
+                        .build(),
+                providerProperties.getQueue().getIncomingPublishTimeoutMillis());
+        if (!enqueued) {
+            messageStore.remove(providerMessageId);
+            throw new com.jio.rcs.operator.exception.IngestionOverloadedException(
+                    "Provider is currently overloaded and could not accept this message within "
+                            + providerProperties.getQueue().getIncomingPublishTimeoutMillis() + "ms; try again shortly");
+        }
 
         // Single canonical acceptance point (single-send, bulk, and every wire
         // profile all flow through here), so this is the one place

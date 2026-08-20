@@ -135,6 +135,26 @@ public class InMemoryQueueService implements QueueService {
 
     @Override
     @SuppressWarnings("unchecked")
+    public <T> boolean tryPublish(String queueName, QueueMessage<T> message, long timeoutMillis) {
+        BlockingQueue<QueueMessage<?>> queue = queueFor(queueName);
+        try {
+            // offer(timeout) instead of put() - see QueueService.tryPublish's
+            // Javadoc for why this is deliberately different from publish()
+            // above: this is the one place a bounded wait (and an explicit
+            // "no" past that bound) is preferable to the zero-loss
+            // guarantee's unbounded blocking, because the caller is a live
+            // HTTP request whose client has its own timeout waiting on it.
+            return queue.offer(message, timeoutMillis, java.util.concurrent.TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            log.error("Interrupted while publishing message {} to queue '{}' - message was NOT enqueued",
+                    message.getMessageId(), queueName, e);
+            return false;
+        }
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
     public <T> void subscribe(String queueName, QueueListener<T> listener) {
         BlockingQueue<QueueMessage<?>> queue = queueFor(queueName);
         AtomicBoolean started = dispatcherStarted.computeIfAbsent(queueName, n -> new AtomicBoolean(false));
