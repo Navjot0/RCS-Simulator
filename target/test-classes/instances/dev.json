@@ -1,0 +1,10 @@
+{
+  "instance": "dev",
+  "enabled": true,
+  "profiles": {
+    "jio": { "callbackUrl": "https://webhook.gtsstaging.com/api/rcs/webhook/jio" },
+    "dotgo": { "callbackUrl": "https://webhook.gtsstaging.com/api/rcs/webhook/dotgo" },
+    "vi": { "callbackUrl": "https://webhook.gtsstaging.com/api/rcs/webhook/vi" },
+    "airtel": { "callbackUrl": "https://webhook.gtsstaging.com/api/rcs/webhook/airtel" }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "instance": "cerf",
+  "enabled": true,
+  "profiles": {
+    "jio": { "callbackUrl": "https://webhook.cerfsolutions.com/api/rcs/webhook/jio" },
+    "dotgo": { "callbackUrl": "https://webhook.cerfsolutions.com/api/rcs/webhook/dotgo" },
+    "vi": { "callbackUrl": "https://webhook.cerfsolutions.com/api/rcs/webhook/vi" },
+    "airtel": { "callbackUrl": "https://webhook.cerfsolutions.com/api/rcs/webhook/airtel" }
+  }
+}
