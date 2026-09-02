@@ -56,4 +56,19 @@ public class MessageStore {
     public int size() {
         return store.size();
     }
+
+    /**
+     * Drops every entry immediately, regardless of state or age - used by
+     * the admin reset endpoint (see AdminController) as a fast alternative
+     * to a full process restart when this map has grown large under a long
+     * high-TPS load test. Not for use while traffic is live: anything
+     * in-flight loses its correlation record, so a subsequent
+     * GET /v1/messages/{id} for it 404s and any pending DLR/callback work
+     * still referencing it will find nothing and no-op (see
+     * DlrQueueConsumer/CallbackQueueConsumer's "message not found" WARN
+     * paths) rather than crash - graceful, but still lossy.
+     */
+    public void clear() {
+        store.clear();
+    }
 }

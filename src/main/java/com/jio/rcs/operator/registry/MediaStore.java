@@ -40,4 +40,14 @@ public class MediaStore {
     public int size() {
         return store.size();
     }
+
+    /**
+     * Drops every uploaded blob immediately - see MessageStore.clear()'s
+     * Javadoc for the same reasoning (used by the admin reset endpoint).
+     * Any previously-issued /v1/media link becomes invalid immediately
+     * after this runs.
+     */
+    public void clear() {
+        store.clear();
+    }
 }
