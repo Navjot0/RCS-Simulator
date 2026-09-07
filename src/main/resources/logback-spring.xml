@@ -52,7 +52,59 @@
         <appender-ref ref="CONSOLE"/>
     </appender>
 
+    <!--
+        Persistent file logging, added so a 500 (or any other error) can be
+        proven to have (or not have) originated from this simulator, backed
+        by a real durable log line instead of relying on `docker logs`
+        (which only shows what's still in the container's log buffer/driver
+        retention, and is gone entirely once the container is removed -
+        exactly what happens on every redeploy so far this session).
+
+        Rolls by both size and day so this can't silently fill the disk
+        under sustained high-TPS traffic: each active file caps at 100MB,
+        rotated files are kept for 14 days, and the total across all
+        rotated files is capped at 2GB (oldest deleted first once that's
+        exceeded) - tune maxHistory/totalSizeCap down if disk space on the
+        host is tight.
+
+        Mount a volume at ./logs (or wherever WORKDIR/logs resolves inside
+        the container) in your `docker run`, e.g. `-v
+        /home/ubuntu/rcs-logs:/app/logs`, or these files are exactly as
+        ephemeral as `docker logs` - gone the moment the container is
+        removed on the next deploy.
+    -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/rcs-simulator.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>logs/archive/rcs-simulator.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>14</maxHistory>
+            <totalSizeCap>2GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!--
+        Own AsyncAppender/queue, separate from ASYNC above - a slow disk
+        write (or a burst that fills this queue) can never block or drop
+        console output, and vice versa. Same neverBlock=true trade-off as
+        ASYNC: under genuinely extreme sustained bursts this can drop log
+        events rather than reintroducing the virtual-thread-pinning stall
+        (see ASYNC's own comment) - acceptable here since the goal is
+        evidence for the common case, not a perfect audit trail of every
+        single line under worst-case overload.
+    -->
+    <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>4000</queueSize>
+        <neverBlock>true</neverBlock>
+        <includeCallerData>false</includeCallerData>
+        <appender-ref ref="FILE"/>
+    </appender>
+
     <root level="INFO">
         <appender-ref ref="ASYNC"/>
+        <appender-ref ref="ASYNC_FILE"/>
     </root>
 </configuration>

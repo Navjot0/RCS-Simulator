@@ -112,16 +112,33 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(body);
     }
 
+    /**
+     * Catch-all for anything not explicitly handled above - this is the
+     * ONLY place in the entire codebase that used to return HTTP 500
+     * (confirmed by grepping for INTERNAL_SERVER_ERROR/internalServerError()
+     * across all of src/main/java - every other response comes from a
+     * specific, deliberate handler above). Changed from 500 to 503 per
+     * explicit requirement: whatever the actual bug turns out to be, this
+     * guarantees no request ever gets a raw "500 Internal Server Error"
+     * back - it becomes a 503 ("temporarily unavailable, retry"), the same
+     * retryable semantics as IngestionOverloadedException, instead of the
+     * "something is broken" signal a 500 carries. This does NOT fix
+     * whatever exception is actually being thrown under multi-tenant load -
+     * it only changes what status code reaches the caller. The errorCode
+     * was already "SERVICE_UNAVAILABLE" here even when paired with 500 -
+     * this just makes the actual HTTP status consistent with that.
+     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception ex, HttpServletRequest request) {
-        log.error("Unhandled exception processing {} {}", request.getMethod(), request.getRequestURI(), ex);
+        log.error("Unhandled exception processing {} {} - returned as 503, not 500, to the caller (see handleGeneric's Javadoc)",
+                request.getMethod(), request.getRequestURI(), ex);
         ErrorResponse body = ErrorResponse.builder()
                 .timestamp(Instant.now())
-                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                .status(HttpStatus.SERVICE_UNAVAILABLE.value())
                 .error("SERVICE_UNAVAILABLE")
-                .message("Unexpected error in provider simulator")
+                .message("Provider simulator temporarily unavailable - please retry")
                 .path(request.getRequestURI())
                 .build();
-        return ResponseEntity.internalServerError().body(body);
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(body);
     }
 }

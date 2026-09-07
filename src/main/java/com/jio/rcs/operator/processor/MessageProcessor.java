@@ -99,30 +99,30 @@ public class MessageProcessor {
         message.setWireAttributes(wireAttributes);
         messageStore.put(message);
 
-        // Bounded wait, not the unbounded publish() every other stage uses -
-        // this is the client-facing admission point, so an indefinite block
-        // here directly becomes indefinite client-visible response time
-        // (this is what was driving ~1.7-2s average response times and the
-        // resulting SocketTimeoutException volume under sustained overload).
-        // If INCOMING doesn't have space within
-        // operator.queue.incoming-publish-timeout-millis, reject fast with a
-        // clear 503 instead of continuing to hang - see
-        // IngestionOverloadedException's Javadoc for why this doesn't
-        // violate the zero-DLR-loss guarantee (the message was never
-        // accepted in the first place). The message was already written to
-        // MessageStore above - remove it on rejection so GET /v1/messages/{id}
-        // doesn't return a message that was never actually queued.
-        boolean enqueued = queueService.tryPublish(QueueNames.INCOMING, QueueMessage.builder()
-                        .correlationId(providerMessageId)
-                        .payload(new IncomingTask(providerMessageId))
-                        .build(),
-                providerProperties.getQueue().getIncomingPublishTimeoutMillis());
-        if (!enqueued) {
-            messageStore.remove(providerMessageId);
-            throw new com.jio.rcs.operator.exception.IngestionOverloadedException(
-                    "Provider is currently overloaded and could not accept this message within "
-                            + providerProperties.getQueue().getIncomingPublishTimeoutMillis() + "ms; try again shortly");
-        }
+        // Reverted to the plain, unbounded, blocking publish() per explicit
+        // requirement: no message may ever be rejected, for any reason -
+        // this is what actually guarantees that (the bounded-timeout
+        // tryPublish() path added earlier traded that guarantee away for
+        // bounded response time; that trade-off is no longer wanted). This
+        // blocks the request thread until INCOMING has space, exactly like
+        // every other stage-to-stage handoff in this pipeline (see
+        // InMemoryQueueService's class Javadoc on the zero-loss guarantee) -
+        // so under sustained overload this can mean a genuinely long
+        // response time again, same as before that change. That's a
+        // deliberate trade the caller is choosing: guaranteed eventual
+        // admission over a bounded response time. IMPORTANT: this simulator
+        // cannot control how long *CPaaS's own HTTP client* is willing to
+        // wait for that response - if a message still shows up as a
+        // "timeout" on the CPaaS side, that's CPaaS's own client-side
+        // timeout firing, not this simulator sending back any kind of
+        // rejection (it never does, by design, on this path) - fixing that
+        // requires raising CPaaS's client timeout, or reducing offered load
+        // so responses genuinely come back faster, not a further simulator
+        // config change.
+        queueService.publish(QueueNames.INCOMING, QueueMessage.builder()
+                .correlationId(providerMessageId)
+                .payload(new IncomingTask(providerMessageId))
+                .build());
 
         // Single canonical acceptance point (single-send, bulk, and every wire
         // profile all flow through here), so this is the one place
