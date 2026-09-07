@@ -9,6 +9,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.Instant;
 import java.util.List;
@@ -110,6 +111,32 @@ public class GlobalExceptionHandler {
                 .path(request.getRequestURI())
                 .build();
         return ResponseEntity.badRequest().body(body);
+    }
+
+    /**
+     * Matched before the generic catch-all below, purely for log level and
+     * status code. This fires for any path with no mapped handler at all -
+     * in practice almost entirely internet background noise hitting the
+     * box's public IP (favicon.ico, PROPFIND/OPTIONS WebDAV probes, generic
+     * vulnerability scanners) rather than anything CPaaS or a real client
+     * sends. Previously fell through to the generic Exception.class handler
+     * below, which logged a full ERROR stack trace for every single one -
+     * real clutter in the persistent log file now that it's meant to be
+     * evidence for genuine issues, not scanner noise. 404 is also the
+     * factually correct status here (nothing exists at that path), not the
+     * 503 "temporarily unavailable" the generic handler implies.
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFound(NoResourceFoundException ex, HttpServletRequest request) {
+        log.debug("No handler for {} {}", request.getMethod(), request.getRequestURI());
+        ErrorResponse body = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("NOT_FOUND")
+                .message("No such resource")
+                .path(request.getRequestURI())
+                .build();
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
     }
 
     /**
