@@ -9,6 +9,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.Instant;
@@ -137,6 +138,35 @@ public class GlobalExceptionHandler {
                 .path(request.getRequestURI())
                 .build();
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    }
+
+    /**
+     * Matched before the generic catch-all, purely for log level - not an
+     * application error at all. Thrown by Spring's own async-response
+     * machinery (which spring.threads.virtual.enabled=true routes every
+     * request through, even a plain synchronous-looking controller method -
+     * see that property's comment in application.properties) when it tries
+     * to flush the response body and finds the client has already reset/closed the
+     * connection (ClientAbortException / "Connection reset by peer" is
+     * always the cause here). By the time this fires, this simulator has
+     * already done its job - the message was ingested and queued before the
+     * controller ever started writing the response - the client just isn't
+     * there anymore to receive the 202. Typically means a load-test client's
+     * own per-request timeout fired and tore down the connection (e.g. a
+     * burst of near-simultaneous connections at test start all racing
+     * against a fixed request-timeout, before the pool/JIT has warmed up),
+     * not a bug here. Previously fell through to the generic Exception
+     * handler below, logging a full 50+ frame ERROR stack trace per
+     * occurrence - real noise under load, for an event this simulator has
+     * no ability to prevent or fix (the client is gone; there's nothing to
+     * retry or correct server-side).
+     */
+    @ExceptionHandler(AsyncRequestNotUsableException.class)
+    public void handleAsyncRequestNotUsable(AsyncRequestNotUsableException ex, HttpServletRequest request) {
+        log.debug("Client disconnected before response could be written for {} {} ({})",
+                request.getMethod(), request.getRequestURI(), ex.getMessage());
+        // No response body attempt: the whole point of this exception is
+        // that the connection Spring would write it to is already gone.
     }
 
     /**
