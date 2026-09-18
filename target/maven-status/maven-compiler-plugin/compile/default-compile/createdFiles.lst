@@ -38,6 +38,7 @@ com\jio\rcs\operator\metrics\MetricsSnapshot.class
 com\jio\rcs\operator\dto\response\StatusHistoryEntryResponse.class
 com\jio\rcs\operator\exception\AgentBlockedException.class
 com\jio\rcs\operator\callback\CallbackTask.class
+com\jio\rcs\operator\callback\CallbackCircuitBreaker.class
 com\jio\rcs\operator\dto\response\HealthResponse.class
 com\jio\rcs\operator\processor\IncomingTask.class
 com\jio\rcs\operator\dto\response\BulkMessageResponse$BulkMessageResponseBuilder.class
@@ -50,6 +51,7 @@ com\jio\rcs\operator\dto\response\CallbackView.class
 com\jio\rcs\operator\dto\response\CheckCapabilityResponse$CheckCapabilityResponseBuilder.class
 com\jio\rcs\operator\wire\DotgoWireController.class
 com\jio\rcs\operator\metrics\MetricsService.class
+com\jio\rcs\operator\config\ProviderProperties$InstanceProfile.class
 com\jio\rcs\operator\dto\response\QueueStatusResponse.class
 com\jio\rcs\operator\processor\IncomingQueueConsumer.class
 com\jio\rcs\operator\config\ProviderProperties$Callback.class
@@ -61,6 +63,7 @@ com\jio\rcs\operator\dto\response\StatusHistoryEntryResponse$StatusHistoryEntryR
 com\jio\rcs\operator\processor\ValidationQueueConsumer.class
 com\jio\rcs\operator\dto\request\CheckCapabilityRequest.class
 com\jio\rcs\operator\model\StatusHistoryEntry$StatusHistoryEntryBuilder.class
+com\jio\rcs\operator\config\ProviderProperties$Instance.class
 com\jio\rcs\operator\controller\MediaUploadController.class
 com\jio\rcs\operator\metrics\RollingTpsCounter.class
 com\jio\rcs\operator\dto\request\CheckCapabilityRequest$CheckCapabilityRequestBuilder.class
@@ -70,9 +73,7 @@ com\jio\rcs\operator\model\MediaBlob.class
 com\jio\rcs\operator\config\ProviderProperties$ErrorCode.class
 com\jio\rcs\operator\metrics\QueueStageMetrics.class
 com\jio\rcs\operator\model\StatusHistoryEntry.class
-com\jio\rcs\operator\config\ProviderProperties$Instances.class
 com\jio\rcs\operator\wire\dlr\DotgoDlrFormatter$1.class
-com\jio\rcs\operator\config\instance\InstanceConfigLoader.class
 com\jio\rcs\operator\config\ProviderProperties$Tps.class
 com\jio\rcs\operator\queue\InMemoryQueueService.class
 com\jio\rcs\operator\audit\AuditLogEntry$AuditLogEntryBuilder.class
@@ -86,6 +87,7 @@ com\jio\rcs\operator\dto\response\SendMessageResponse.class
 com\jio\rcs\operator\config\ProviderProperties$Latency.class
 com\jio\rcs\operator\callback\CallbackEngine.class
 com\jio\rcs\operator\dto\response\PagedResponse.class
+com\jio\rcs\operator\callback\CallbackCircuitBreaker$DestinationState.class
 com\jio\rcs\operator\dto\response\MessageStatusResponse$MessageStatusResponseBuilder.class
 com\jio\rcs\operator\metrics\RuntimeMetrics$RuntimeMetricsBuilder.class
 com\jio\rcs\operator\processor\DlrEngine.class
@@ -96,7 +98,6 @@ com\jio\rcs\operator\controller\CheckCapabilityController.class
 com\jio\rcs\operator\model\MediaBlob$MediaBlobBuilder.class
 com\jio\rcs\operator\queue\QueueMessage$QueueMessageBuilder.class
 com\jio\rcs\operator\config\WireProviderProperties.class
-com\jio\rcs\operator\config\instance\ProfileConfig.class
 com\jio\rcs\operator\callback\DeliveryInfo$DeliveryInfoBuilder.class
 com\jio\rcs\operator\config\ProviderProperties$Identity.class
 com\jio\rcs\operator\dto\response\BulkMessageResultItem.class
@@ -116,7 +117,6 @@ com\jio\rcs\operator\metrics\RuntimeMetricsRecorder.class
 com\jio\rcs\operator\exception\WireProfileDisabledException.class
 com\jio\rcs\operator\wire\AirtelWireController.class
 com\jio\rcs\operator\processor\DlrTransitionTask.class
-com\jio\rcs\operator\exception\WireInstanceDisabledException.class
 com\jio\rcs\operator\wire\dlr\JioDlrFormatter$1.class
 com\jio\rcs\operator\wire\OAuthTokenSupport.class
 com\jio\rcs\operator\wire\CallbackUrlResolver.class
@@ -128,6 +128,7 @@ com\jio\rcs\operator\audit\AuditLogService.class
 com\jio\rcs\operator\wire\WireIngestService.class
 com\jio\rcs\operator\callback\CallbackClient.class
 com\jio\rcs\operator\processor\DlrEngine$1.class
+com\jio\rcs\operator\controller\AdminController.class
 com\jio\rcs\operator\wire\dlr\ViDlrFormatter.class
 com\jio\rcs\operator\config\ProviderProperties$Metrics.class
 com\jio\rcs\operator\dto\response\CheckCapabilityResponse.class
@@ -152,7 +153,9 @@ com\jio\rcs\operator\callback\CallbackAgent.class
 com\jio\rcs\operator\dto\response\ErrorResponse.class
 com\jio\rcs\operator\controller\MessageController.class
 com\jio\rcs\operator\util\IstTime.class
+com\jio\rcs\operator\exception\IngestionOverloadedException.class
 com\jio\rcs\operator\wire\ViWireController.class
+com\jio\rcs\operator\config\ProviderProperties$CircuitBreaker.class
 com\jio\rcs\operator\dto\response\StatisticsResponse$StatisticsResponseBuilder.class
 com\jio\rcs\operator\exception\InvalidStateTransitionException.class
 com\jio\rcs\operator\config\ProviderProperties$PerformanceMode.class
@@ -163,7 +166,6 @@ com\jio\rcs\operator\processor\DlrQueueConsumer.class
 com\jio\rcs\operator\callback\CallbackEnvelope.class
 com\jio\rcs\operator\controller\BulkMessageController.class
 com\jio\rcs\operator\dto\request\BulkMessageRequest.class
-com\jio\rcs\operator\config\instance\InstanceConfig.class
 com\jio\rcs\operator\dto\response\StatisticsResponse.class
 com\jio\rcs\operator\util\IdGenerator.class
 com\jio\rcs\operator\config\ProviderProperties$Media.class
@@ -179,4 +181,3 @@ com\jio\rcs\operator\config\WireProviderProperties$Profile.class
 com\jio\rcs\operator\dto\response\UploadFileResponse$UploadFileResponseBuilder.class
 com\jio\rcs\operator\wire\dlr\AirtelDlrFormatter$1.class
 com\jio\rcs\operator\callback\CallbackDeliveryResult.class
-com\jio\rcs\operator\config\instance\InstanceRegistry.class

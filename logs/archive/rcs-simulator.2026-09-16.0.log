@@ -1,0 +1,60 @@
+2026-09-16 18:21:06.501 [main] INFO  c.j.r.o.i.MessageFlowIntegrationTest - Starting MessageFlowIntegrationTest using Java 21.0.11 with PID 13088 (started by Navjot Singh in C:\Users\Navjot Singh\project\RCS Simulator)
+2026-09-16 18:21:06.503 [main] INFO  c.j.r.o.i.MessageFlowIntegrationTest - No active profile set, falling back to 1 default profile: "default"
+2026-09-16 18:21:08.634 [main] INFO  c.j.r.o.s.TimingWheelScheduler - Timing wheel scheduler started: wheelSize=512 tickDurationMillis=100 workerCount=256 (one revolution spans 51200ms)
+2026-09-16 18:21:08.679 [main] INFO  c.j.r.o.queue.InMemoryQueueService - Started 750 virtual-thread dispatcher(s) for queue 'callback-queue' on its own dedicated executor
+2026-09-16 18:21:08.756 [main] INFO  c.j.r.o.queue.InMemoryQueueService - Started 512 virtual-thread dispatcher(s) for queue 'dlr-queue' on its own dedicated executor
+2026-09-16 18:21:08.768 [main] INFO  c.j.r.o.queue.InMemoryQueueService - Started 2000 virtual-thread dispatcher(s) for queue 'incoming-queue' on its own dedicated executor
+2026-09-16 18:21:08.771 [main] INFO  c.j.r.o.queue.InMemoryQueueService - Started 256 virtual-thread dispatcher(s) for queue 'processing-queue' on its own dedicated executor
+2026-09-16 18:21:08.778 [main] INFO  c.j.r.o.queue.InMemoryQueueService - Started 256 virtual-thread dispatcher(s) for queue 'validation-queue' on its own dedicated executor
+2026-09-16 18:21:09.840 [main] INFO  o.s.b.t.m.w.SpringBootMockServletContext - Initializing Spring TestDispatcherServlet ''
+2026-09-16 18:21:09.840 [main] INFO  o.s.t.w.s.TestDispatcherServlet - Initializing Servlet ''
+2026-09-16 18:21:09.841 [main] INFO  o.s.t.w.s.TestDispatcherServlet - Completed initialization in 1 ms
+2026-09-16 18:21:09.871 [main] INFO  c.j.r.o.i.MessageFlowIntegrationTest - Started MessageFlowIntegrationTest in 3.781 seconds (process running for 4.928)
+2026-09-16 18:21:09.877 [main] INFO  c.j.r.o.c.QueueWorkerConfigReporter - Queue Worker Configuration
+  Incoming    : 2000
+  Validation  : 256
+  Processing  : 256
+  DLR         : 512
+  Callback    : 750
+  Scheduler   : 256
+2026-09-16 18:21:10.873 [main] INFO  c.j.r.o.c.MediaUploadController - Stored uploaded media MEDIANX476MENCVKGNKYQ (4 bytes, image/png)
+2026-09-16 18:21:11.024 [main] WARN  c.j.r.o.e.GlobalExceptionHandler - Provider exception [UNSUPPORTED_MEDIA_TYPE]: content type 'text/plain' is not supported; allowed: [image/jpeg, image/jpg, image/gif, image/png, video/mp4, video/mpeg, video/mpeg4, video/webm, application/pdf]
+2026-09-16 18:21:11.198 [main] WARN  c.j.r.o.e.GlobalExceptionHandler - Malformed request body for POST /v1/messages: JSON parse error: Cannot construct instance of `java.util.ArrayList` (although at least one Creator exists): no String-argument constructor/factory method to deserialize from String value ('919999999999')
+2026-09-16 18:21:11.212 [main] INFO  o.s.t.c.s.AnnotationConfigContextLoaderUtils - Could not detect default configuration classes for test class [com.jio.rcs.operator.integration.WireFormatIntegrationTest]: WireFormatIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-09-16 18:21:11.216 [main] INFO  o.s.b.t.c.SpringBootTestContextBootstrapper - Found @SpringBootConfiguration com.jio.rcs.operator.RcsSimulatorApplication for test class com.jio.rcs.operator.integration.WireFormatIntegrationTest
+2026-09-16 18:21:11.693 [main] WARN  c.j.r.o.callback.CallbackEngine - Callback for message SIMTEST0002 moved to Dead Letter Queue after 3 attempts
+2026-09-16 18:21:12.592 [main] INFO  c.j.r.o.s.TimingWheelScheduler - Timing wheel scheduler started: wheelSize=64 tickDurationMillis=10 workerCount=4 (one revolution spans 640ms)
+2026-09-16 18:21:12.694 [main] INFO  c.j.r.o.s.TimingWheelScheduler - Timing wheel scheduler stopped
+2026-09-16 18:21:12.696 [main] INFO  c.j.r.o.s.TimingWheelScheduler - Timing wheel scheduler started: wheelSize=128 tickDurationMillis=5 workerCount=16 (one revolution spans 640ms)
+2026-09-16 18:21:12.912 [main] INFO  c.j.r.o.s.TimingWheelScheduler - Timing wheel scheduler stopped
+2026-09-16 18:21:12.912 [main] INFO  c.j.r.o.s.TimingWheelScheduler - Timing wheel scheduler started: wheelSize=32 tickDurationMillis=50 workerCount=4 (one revolution spans 1600ms)
+2026-09-16 18:21:12.974 [main] INFO  c.j.r.o.s.TimingWheelScheduler - Timing wheel scheduler stopped
+2026-09-16 18:21:13.339 [SpringApplicationShutdownHook] INFO  c.j.r.o.queue.InMemoryQueueService - Shutting down in-memory queue service - stopping 5 per-queue dispatcher executor(s)
+2026-09-16 18:21:13.346 [SpringApplicationShutdownHook] INFO  c.j.r.o.s.TimingWheelScheduler - Timing wheel scheduler stopped
+2026-09-16 18:32:51.584 [main] INFO  c.j.r.o.RcsSimulatorApplication - Starting RcsSimulatorApplication using Java 21.0.11 with PID 35404 (C:\Users\Navjot Singh\project\RCS Simulator\target\classes started by Navjot Singh in C:\Users\Navjot Singh\project\RCS Simulator)
+2026-09-16 18:32:51.588 [main] INFO  c.j.r.o.RcsSimulatorApplication - No active profile set, falling back to 1 default profile: "default"
+2026-09-16 18:32:52.627 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat initialized with port 8080 (http)
+2026-09-16 18:32:52.643 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2026-09-16 18:32:52.643 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.30]
+2026-09-16 18:32:52.709 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2026-09-16 18:32:52.709 [main] INFO  o.s.b.w.s.c.ServletWebServerApplicationContext - Root WebApplicationContext: initialization completed in 1076 ms
+2026-09-16 18:32:53.073 [main] INFO  c.j.r.o.s.TimingWheelScheduler - Timing wheel scheduler started: wheelSize=512 tickDurationMillis=100 workerCount=256 (one revolution spans 51200ms)
+2026-09-16 18:32:53.112 [main] INFO  c.j.r.o.queue.InMemoryQueueService - Started 750 virtual-thread dispatcher(s) for queue 'callback-queue' on its own dedicated executor
+2026-09-16 18:32:53.146 [main] INFO  c.j.r.o.queue.InMemoryQueueService - Started 512 virtual-thread dispatcher(s) for queue 'dlr-queue' on its own dedicated executor
+2026-09-16 18:32:53.146 [main] INFO  c.j.r.o.queue.InMemoryQueueService - Started 2000 virtual-thread dispatcher(s) for queue 'incoming-queue' on its own dedicated executor
+2026-09-16 18:32:53.146 [main] INFO  c.j.r.o.queue.InMemoryQueueService - Started 256 virtual-thread dispatcher(s) for queue 'processing-queue' on its own dedicated executor
+2026-09-16 18:32:53.160 [main] INFO  c.j.r.o.queue.InMemoryQueueService - Started 256 virtual-thread dispatcher(s) for queue 'validation-queue' on its own dedicated executor
+2026-09-16 18:32:53.512 [main] INFO  o.s.b.w.e.tomcat.TomcatWebServer - Tomcat started on port 8080 (http) with context path '/'
+2026-09-16 18:32:53.521 [main] INFO  c.j.r.o.RcsSimulatorApplication - Started RcsSimulatorApplication in 2.402 seconds (process running for 2.707)
+2026-09-16 18:32:53.524 [main] INFO  c.j.r.o.c.QueueWorkerConfigReporter - Queue Worker Configuration
+  Incoming    : 2000
+  Validation  : 256
+  Processing  : 256
+  DLR         : 512
+  Callback    : 750
+  Scheduler   : 256
+2026-09-16 18:33:07.493 [tomcat-handler-1] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-09-16 18:33:07.493 [tomcat-handler-1] INFO  o.s.web.servlet.DispatcherServlet - Initializing Servlet 'dispatcherServlet'
+2026-09-16 18:33:07.494 [tomcat-handler-1] INFO  o.s.web.servlet.DispatcherServlet - Completed initialization in 1 ms
+2026-09-16 22:24:40.173 [SpringApplicationShutdownHook] INFO  c.j.r.o.queue.InMemoryQueueService - Shutting down in-memory queue service - stopping 5 per-queue dispatcher executor(s)
+2026-09-16 22:24:40.322 [SpringApplicationShutdownHook] INFO  c.j.r.o.s.TimingWheelScheduler - Timing wheel scheduler stopped

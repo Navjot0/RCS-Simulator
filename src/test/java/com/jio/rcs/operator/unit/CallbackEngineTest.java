@@ -3,6 +3,7 @@ package com.jio.rcs.operator.unit;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.jio.rcs.operator.callback.CallbackCircuitBreaker;
 import com.jio.rcs.operator.callback.CallbackClient;
 import com.jio.rcs.operator.callback.CallbackContentMapper;
 import com.jio.rcs.operator.callback.CallbackDeliveryResult;
@@ -75,7 +76,7 @@ class CallbackEngineTest {
         objectMapper.setTimeZone(TimeZone.getTimeZone("Asia/Kolkata"));
         objectMapper.enable(SerializationFeature.WRITE_DATES_WITH_CONTEXT_TIME_ZONE);
         callbackEngine = new CallbackEngine(callbackClient, objectMapper, properties, dlrScheduler,
-                new CallbackContentMapper(), new RuntimeMetricsRecorder(properties),
+                new CallbackContentMapper(), new RuntimeMetricsRecorder(properties, new CallbackCircuitBreaker(properties)),
                 new DlrFormatterRegistry(List.of()), new WireProviderProperties());
     }
 
