@@ -52,23 +52,34 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * threads are reserved for it" - raising it costs almost nothing since
  * virtual threads aren't pooled.
  *
- * <p><b>publish() applies backpressure instead of dropping.</b> An earlier
- * version used {@code offer()} - if a queue was momentarily at capacity,
- * the message was logged and silently discarded, which is exactly how DLR
- * events went missing under high-concurrency load testing (see
- * {@code CHANGES.md}/README "Guaranteed no message loss" section). Every
- * queue in the pipeline (INCOMING -&gt; VALIDATION -&gt; PROCESSING -&gt; DLR -&gt;
- * CALLBACK) is strictly linear with no cycles back to an earlier stage, so
- * blocking a producer when a downstream queue is full only ever slows that
- * one chain down (natural backpressure) - it can never deadlock. The
- * concrete effect: if the CALLBACK queue backs up because your webhook
- * receiver can't keep up, DLR processing slows to match it rather than
- * silently losing events; if INCOMING backs up under a very large burst,
- * {@code POST /v1/messages} itself takes longer to return rather than
- * accepting a message it then can't guarantee will ever be processed.
- * Queue capacities (operator.queue.*-queue-size) are sized generously by
- * default so this only engages under genuinely extreme load - see
- * application.properties.
+ * <p><b>publish() applies backpressure instead of dropping - except for
+ * CALLBACK, which is unbounded.</b> An earlier version used {@code offer()} -
+ * if a queue was momentarily at capacity, the message was logged and
+ * silently discarded, which is exactly how DLR events went missing under
+ * high-concurrency load testing (see {@code CHANGES.md}/README "Guaranteed
+ * no message loss" section). INCOMING/VALIDATION/PROCESSING/DLR still use
+ * this bounded-backpressure design: they're all fast, in-memory-only work,
+ * so a full queue there is a genuine, rare "we're overwhelmed" signal worth
+ * slowing ingestion for. CALLBACK is different - it's the one stage whose
+ * per-message work is a real outbound HTTP call to a webhook receiver this
+ * simulator doesn't control, and letting IT apply the same backpressure
+ * meant a slow/dead receiver would fill CALLBACK, block DlrQueueConsumer's
+ * publish() into it, back up DLR, then PROCESSING, then VALIDATION, then
+ * INCOMING, and ultimately stall the client-facing {@code POST /v1/messages}
+ * thread - confirmed in production as the actual mechanism behind repeated
+ * response-time regressions this session. Given the explicit requirement
+ * "accept every message, delivered whenever, never drop or stall submission
+ * for it," CALLBACK's capacity is hardcoded to {@code Integer.MAX_VALUE}
+ * (see {@link #resolveCapacity}) - it can never itself become the thing that
+ * blocks a producer, so accepting a message is now fully decoupled from
+ * whether/when its DLR ever actually reaches the destination. The trade-off:
+ * a persistently dead receiver now grows CALLBACK's in-memory backlog
+ * without bound instead of applying backpressure - watch queue depth via
+ * {@code depth("CALLBACK")} / {@code GET /metrics} rather than relying on
+ * ingestion slowing down to surface the problem. (The circuit breaker in
+ * front of CallbackClient - see CallbackCircuitBreaker - is what actually
+ * keeps that backlog from growing unbounded in practice against a
+ * persistently-dead destination, by stopping wasted attempts to it.)
  */
 @Slf4j
 @Service
@@ -111,7 +122,14 @@ public class InMemoryQueueService implements QueueService {
             case com.jio.rcs.operator.queue.QueueNames.VALIDATION -> q.getValidationQueueSize();
             case com.jio.rcs.operator.queue.QueueNames.PROCESSING -> q.getProcessingQueueSize();
             case com.jio.rcs.operator.queue.QueueNames.DLR -> q.getDlrQueueSize();
-            case com.jio.rcs.operator.queue.QueueNames.CALLBACK -> q.getCallbackQueueSize();
+            // CALLBACK is deliberately unbounded - operator.queue.callback-queue-size
+            // is not consulted here. See this class's Javadoc,
+            // "publish() applies backpressure instead of dropping - except
+            // for CALLBACK." A slow/dead webhook receiver must never be
+            // able to fill this queue and block the DLR stage's publish
+            // into it - that's the exact mechanism that cascaded into
+            // blocking POST /v1/messages this session.
+            case com.jio.rcs.operator.queue.QueueNames.CALLBACK -> Integer.MAX_VALUE;
             default -> q.getCapacity();
         };
     }

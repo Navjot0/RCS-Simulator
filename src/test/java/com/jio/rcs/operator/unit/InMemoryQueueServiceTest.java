@@ -1,5 +1,6 @@
 package com.jio.rcs.operator.unit;
 
+import com.jio.rcs.operator.callback.CallbackCircuitBreaker;
 import com.jio.rcs.operator.config.ProviderProperties;
 import com.jio.rcs.operator.metrics.RuntimeMetricsRecorder;
 import com.jio.rcs.operator.queue.InMemoryQueueService;
@@ -34,7 +35,7 @@ class InMemoryQueueServiceTest {
         // publish()/depth()/takeForTest(), so no dispatcher loop ever starts
         // and the metrics recorder (only touched inside dispatchLoop) is never
         // exercised either - a real instance is simplest, no mock needed.
-        return new InMemoryQueueService(properties, new RuntimeMetricsRecorder(properties));
+        return new InMemoryQueueService(properties, new RuntimeMetricsRecorder(properties, new CallbackCircuitBreaker(properties)));
     }
 
     private QueueMessage<String> message(String id) {

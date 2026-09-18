@@ -47,6 +47,11 @@ public class RuntimeMetrics {
     private long callbackRetryCount;
     private double callbackSuccessRatePercent;
 
+    /** Total attempts skipped without ever touching the network because CallbackCircuitBreaker was OPEN for that destination - see that class's Javadoc. */
+    private long callbackCircuitBreakerSkippedCount;
+    /** How many distinct callback URLs currently have an OPEN breaker (i.e. are being treated as down right now). */
+    private long circuitBreakerOpenDestinationCount;
+
     /** JVM-wide, read live from ThreadMXBean/MemoryMXBean/GarbageCollectorMXBean - not accumulated, always current as of the snapshot. */
     private int activeThreadCount;
     private long heapUsedBytes;

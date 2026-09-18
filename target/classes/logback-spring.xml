@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!--
+        Spring Boot's own default include files - reusing these (rather than
+        redefining conversion rules/pattern) means logging.pattern.console
+        and logging.level.* in application.properties keep working exactly
+        as before; only the appender wiring below changes.
+    -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <!--
+        Wraps the standard CONSOLE appender (defined by the include above)
+        in an AsyncAppender.
+
+        Why: Logback's plain ConsoleAppender writes under a `synchronized`
+        block. On Java 21 virtual threads, a synchronized block pins the
+        calling virtual thread to its carrier (platform) thread instead of
+        letting it unmount while blocked - this is what actually stalled
+        this simulator under a real 20,000 TPS load test, not connection
+        capacity: two very hot per-request log.info() lines
+        (CallbackEngine's "DLR delivered", CallbackUrlResolver's "Resolved
+        wire callback") were together firing tens of thousands of
+        times/sec, and enough virtual threads piling up on that one
+        synchronous appender's lock collapsed effective parallelism for the
+        *entire* app down toward CPU core count (the default carrier-thread
+        pool size), not just logging throughput.
+
+        Downgrading those two lines to DEBUG (see their own comments) fixes
+        the immediate cause, but this appender is the structural fix: any
+        log line that does stay enabled by default (WARN/ERROR - DLQ,
+        retries, startup - or DEBUG during troubleshooting) still funnels
+        through the same synchronous appender otherwise, and could
+        reproduce the exact same stall under enough concurrent volume in
+        the future without anyone changing a log level. AsyncAppender moves
+        the actual write to stdout onto its own dedicated thread via a
+        bounded queue, so no request-handling virtual thread ever blocks on
+        it.
+
+        neverBlock=true: once the queue is full, new log events are DROPPED
+        rather than blocking the caller - the right trade-off for a
+        high-TPS simulator, where losing an occasional log line under
+        extreme overload is far preferable to reintroducing the very stall
+        this appender exists to prevent. queueSize raised well past
+        Logback's 256 default so drops should only happen under genuinely
+        extreme, sustained bursts, not routine load-test traffic.
+    -->
+    <appender name="ASYNC" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>4000</queueSize>
+        <neverBlock>true</neverBlock>
+        <includeCallerData>false</includeCallerData>
+        <appender-ref ref="CONSOLE"/>
+    </appender>
+
+    <!--
+        Persistent file logging, added so a 500 (or any other error) can be
+        proven to have (or not have) originated from this simulator, backed
+        by a real durable log line instead of relying on `docker logs`
+        (which only shows what's still in the container's log buffer/driver
+        retention, and is gone entirely once the container is removed -
+        exactly what happens on every redeploy so far this session).
+
+        Rolls by both size and day so this can't silently fill the disk
+        under sustained high-TPS traffic: each active file caps at 100MB,
+        rotated files are kept for 14 days, and the total across all
+        rotated files is capped at 2GB (oldest deleted first once that's
+        exceeded) - tune maxHistory/totalSizeCap down if disk space on the
+        host is tight.
+
+        Mount a volume at ./logs (or wherever WORKDIR/logs resolves inside
+        the container) in your `docker run`, e.g. `-v
+        /home/ubuntu/rcs-logs:/app/logs`, or these files are exactly as
+        ephemeral as `docker logs` - gone the moment the container is
+        removed on the next deploy.
+    -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/rcs-simulator.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>logs/archive/rcs-simulator.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>14</maxHistory>
+            <totalSizeCap>2GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!--
+        Own AsyncAppender/queue, separate from ASYNC above - a slow disk
+        write (or a burst that fills this queue) can never block or drop
+        console output, and vice versa. Same neverBlock=true trade-off as
+        ASYNC: under genuinely extreme sustained bursts this can drop log
+        events rather than reintroducing the virtual-thread-pinning stall
+        (see ASYNC's own comment) - acceptable here since the goal is
+        evidence for the common case, not a perfect audit trail of every
+        single line under worst-case overload.
+    -->
+    <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>4000</queueSize>
+        <neverBlock>true</neverBlock>
+        <includeCallerData>false</includeCallerData>
+        <appender-ref ref="FILE"/>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="ASYNC"/>
+        <appender-ref ref="ASYNC_FILE"/>
+    </root>
+</configuration>

@@ -337,6 +337,52 @@ public class ProviderProperties {
         private int maxTotalConnections = 200;
         /** Max pooled connections per callback destination (route). */
         private int maxConnectionsPerRoute = 100;
+        /** See {@link CircuitBreaker}. */
+        private CircuitBreaker circuitBreaker = new CircuitBreaker();
+    }
+
+    /**
+     * Per-destination (per callback URL) circuit breaker for
+     * {@link com.jio.rcs.operator.callback.CallbackClient} - see
+     * {@link com.jio.rcs.operator.callback.CallbackCircuitBreaker} for the
+     * actual state machine. Exists because retry/backoff alone (Retry above)
+     * isn't sufficient against a destination that is persistently down for
+     * an extended stretch: every one of its retries still costs a real
+     * pooled connection and up to readTimeoutMillis/connectTimeoutMillis of
+     * wall-clock time per attempt. At volume, a single dead destination can
+     * structurally exceed the connection pool's sustainable drain rate
+     * (maxConnectionsPerRoute / readTimeoutMillis), and because the CALLBACK
+     * queue is deliberately unbounded (see InMemoryQueueService - it must
+     * never block message ingestion), nothing else stops that backlog from
+     * growing for as long as the destination stays down. Tripping the
+     * breaker after enough consecutive failures means those wasted attempts
+     * stop happening at all - a skipped attempt returns immediately without
+     * ever touching the connection pool - freeing that capacity for every
+     * other, healthy destination, while a subsequent probe still lets a
+     * recovered destination be detected and resume traffic automatically.
+     */
+    @Data
+    public static class CircuitBreaker {
+        private boolean enabled = true;
+        /**
+         * Consecutive failures (across all attempts to this one callback
+         * URL, first-attempts and retries alike) before the breaker trips
+         * OPEN for this destination. Deliberately not "percentage-based" -
+         * a simple consecutive-failure count is cheap to track lock-free
+         * (a single AtomicInteger, reset to 0 on any success) and behaves
+         * correctly at any traffic volume, unlike a rolling-window success
+         * rate which needs a minimum sample size to be meaningful.
+         */
+        private int failureThreshold = 10;
+        /**
+         * How long the breaker stays OPEN (short-circuiting every attempt)
+         * before allowing exactly one HALF_OPEN probe through to test
+         * whether the destination has recovered. Kept well below the retry
+         * budget's own backoff-max-millis so a genuinely-recovered
+         * destination is detected reasonably quickly rather than staying
+         * dark for a long stretch after coming back up.
+         */
+        private long coolDownMillis = 30000;
     }
 
     @Data

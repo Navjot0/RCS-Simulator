@@ -70,6 +70,21 @@ public class RestClientConfig {
 
         RequestConfig requestConfig = RequestConfig.custom()
                 .setResponseTimeout(Timeout.ofMilliseconds(callback.getReadTimeoutMillis()))
+                // Apache HttpClient5's own default for this is 3 MINUTES
+                // (180,000ms) if left unset - the time a request will wait
+                // to lease a connection from the pool before giving up. Left
+                // unset, that default is what silently governs "connection
+                // timeout" failures under sustained load: when the pool for
+                // one destination is fully checked out (e.g. a burst of
+                // fresh traffic arriving faster than in-flight attempts to a
+                // slow/dead receiver can free their connections), every
+                // additional caller waits up to 3 minutes before it even
+                // gets to try, rather than failing fast. That's a confusing,
+                // unrelated-looking number that doesn't match any
+                // operator.callback.* property - pin it to connect-timeout-
+                // millis instead so pool exhaustion fails fast and visibly,
+                // the same way a slow TCP connect would.
+                .setConnectionRequestTimeout(Timeout.ofMilliseconds(callback.getConnectTimeoutMillis()))
                 .build();
 
         CloseableHttpClient httpClient = HttpClients.custom()

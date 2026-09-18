@@ -1,5 +1,6 @@
 package com.jio.rcs.operator.metrics;
 
+import com.jio.rcs.operator.callback.CallbackCircuitBreaker;
 import com.jio.rcs.operator.config.ProviderProperties;
 import com.jio.rcs.operator.queue.QueueNames;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +42,7 @@ import java.util.concurrent.atomic.LongAdder;
 public class RuntimeMetricsRecorder {
 
     private final ProviderProperties providerProperties;
+    private final CallbackCircuitBreaker circuitBreaker;
 
     private final RollingTpsCounter ingestionTps = new RollingTpsCounter();
 
@@ -142,6 +144,8 @@ public class RuntimeMetricsRecorder {
                 .callbackFailureCount(callbackFailureCount.sum())
                 .callbackRetryCount(callbackRetryCount.sum())
                 .callbackSuccessRatePercent(callbackSuccessRate)
+                .callbackCircuitBreakerSkippedCount(circuitBreaker.skippedCount())
+                .circuitBreakerOpenDestinationCount(circuitBreaker.openDestinationCount())
                 .activeThreadCount(threadMXBean.getThreadCount())
                 .heapUsedBytes(heap.getUsed())
                 .heapMaxBytes(heap.getMax())
