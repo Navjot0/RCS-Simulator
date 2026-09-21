@@ -1,6 +1,6 @@
 target/
+.git/
 .idea/
 *.iml
-.git/
-.gitignore
+.vscode/
 *.log
